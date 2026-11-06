@@ -6,7 +6,7 @@ import java.util.List;
 /** Tabla comando: la lista que se envía con "help". */
 public class DComando extends Dato {
 
-    public static final String[] HEADERS = {"CASO DE USO", "COMANDO", "PARAMETROS", "EJEMPLO", "QUIEN"};
+    public static final String[] HEADERS = {"CASO DE USO", "COMANDO", "FORMATO (copie, reemplace y envíe)", "EJEMPLO", "QUIEN"};
 
     public static List<String[]> listar() throws SQLException {
         return consultar("SELECT caso_uso, accion, parametro, ejemplo, roles FROM comando ORDER BY id");
