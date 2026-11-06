@@ -430,7 +430,12 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
         String estado = ex.getSQLState() == null ? "" : ex.getSQLState();
         switch (estado) {
             case "23505":
-                return "Ya existe un registro con ese dato (email, username, url o nombre repetido).";
+                // PostgreSQL dice cuál fue: "Key (username)=(elvis) already exists" / "Ya existe la llave (username)=(elvis)"
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\(([\\w, ]+)\\)=\\(([^)]*)\\)")
+                        .matcher(String.valueOf(ex.getMessage()));
+                return m.find()
+                        ? "El " + m.group(1) + " '" + m.group(2) + "' ya está registrado. Use uno diferente."
+                        : "Ya existe un registro con ese dato (email, username, url o nombre repetido).";
             case "23503":
                 return "Se hace referencia a un registro que no existe, o el registro está en uso.";
             case "23514":
