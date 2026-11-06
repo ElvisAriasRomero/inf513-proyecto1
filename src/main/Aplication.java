@@ -461,7 +461,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
 
     /** Envía la respuesta por correo. La consola local lo reemplaza para guardarla en un archivo. */
     protected void enviar(String to, String html, String imagenBase64) {
-        iniciar(new SendEmailThread(new Email(to, Email.SUBJECT, html, imagenBase64)), "Send email Thread");
+        iniciar(new SendEmailThread(new Email(to, Email.asunto(), html, imagenBase64)), "Send email Thread");
     }
 
     private static void iniciar(Runnable tarea, String nombre) {

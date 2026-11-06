@@ -2,6 +2,11 @@
 
 public class Email {
     public static final String SUBJECT = "Respuesta - Grupo 13";
+
+    /** Asunto con la hora, para que Gmail no junte todas las respuestas en una sola conversación. */
+    public static String asunto() {
+        return SUBJECT + " (" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm:ss")) + ")";
+    }
     private String from;
     private String to;
     private String subject;

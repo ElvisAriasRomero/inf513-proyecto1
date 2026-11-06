@@ -76,7 +76,7 @@ public class WebhookPagoFacil {
         String[] aviso = NCuota.confirmarPagoFacil(pedido, comprobante); // {email, mensaje}
         if (aviso != null) {
             System.out.println("PagoFácil: pago confirmado del pedido " + pedido);
-            Email email = new Email(aviso[0], Email.SUBJECT, HtmlBuilder.texto("Pago QR recibido", aviso[1]));
+            Email email = new Email(aviso[0], Email.asunto(), HtmlBuilder.texto("Pago QR recibido", aviso[1]));
             new Thread(new SendEmailThread(email), "Send email Thread").start();
         }
     }
