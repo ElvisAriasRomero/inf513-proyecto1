@@ -20,6 +20,7 @@ import negociodato.dato.*;
 import negociodato.negocio.*;
 import negociodato.utils.Constantes;
 import negociodato.utils.Params;
+import pagos.VerificadorPagos;
 import pagos.WebhookPagoFacil;
 import scraping.ScrapingThread;
 
@@ -58,6 +59,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
         iniciar(mailVerificationThread, "Mail Verification Thread");
         iniciar(new ScrapingThread(), "Scraping Thread");
         WebhookPagoFacil.iniciar();
+        iniciar(new VerificadorPagos(), "PagoFacil Thread");
     }
 
     @Override

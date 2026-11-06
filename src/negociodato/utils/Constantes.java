@@ -31,15 +31,18 @@ public class Constantes {
     public static final int CAPTURAS_POR_ESCANEO = 4; // 4 x 6 h = páginas externas 1 vez al día
     public static final int DIAS_SEGUIMIENTO = 30;
 
-    // PagoFácil (QR bancario), igual que en taller-web. Las credenciales se leen de variables de entorno
-    // con el mismo nombre que su .env; si no existen, se usa el texto de la derecha.
-    public static final String PAGOFACIL_URL = env("PAGOFACIL_BASE_URL", "https://serviciostigomoney.pagofacil.com.bo/api/servicio");
-    public static final String PAGOFACIL_COMMERCE_ID = env("PAGOFACIL_COMMERCE_ID", "");
+    // PagoFácil QR Master v2 (documento "ServiciosPagoFacil_QrMaster_v1.1.0").
+    // Las credenciales las entrega PagoFácil y se leen de variables de entorno (no van en el código).
+    public static final String PAGOFACIL_URL = env("PAGOFACIL_BASE_URL", "https://masterqr.pagofacil.com.bo/api/services/v2");
     public static final String PAGOFACIL_TOKEN_SERVICE = env("PAGOFACIL_TOKEN_SERVICE", "");
     public static final String PAGOFACIL_TOKEN_SECRET = env("PAGOFACIL_TOKEN_SECRET", "");
-    // URL pública (ngrok) que apunta al puerto de abajo + /pagofacil/webhook
+    // paymentMethodId del QR. Vacío = se pide a /list-enabled-services y se usa el primero habilitado.
+    public static final String PAGOFACIL_METODO = env("PAGOFACIL_METODO", "");
+    // Callback (opcional): URL pública (ngrok) que apunta al puerto de abajo + /pagofacil/webhook.
+    // Sin callback igual funciona: el sistema consulta /query-transaction cada minuto.
     public static final String PAGOFACIL_CALLBACK_URL = env("PAGOFACIL_CALLBACK_URL", "https://postman-echo.com/post");
     public static final int PAGOFACIL_PUERTO = Integer.parseInt(env("PAGOFACIL_PUERTO", "8080"));
+    public static final int PAGOFACIL_SEGUNDOS_CONSULTA = 60;
     // Modo prueba: al banco se le cobra 0.01 Bs, pero la cuota se marca pagada por su monto real
     public static final boolean PAGOFACIL_MODO_PRUEBA = true;
 

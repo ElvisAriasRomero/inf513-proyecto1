@@ -32,7 +32,8 @@ public class WebhookPagoFacil {
             HttpServer server = HttpServer.create(new InetSocketAddress(Constantes.PAGOFACIL_PUERTO), 0);
             server.createContext(RUTA, ex -> {
                 int codigo = 200;
-                String respuesta = "{\"message\":\"Notificacion recibida correctamente\"}";
+                // Respuesta que pide el documento de PagoFácil para dar por recibida la notificación
+                String respuesta = "{\"error\":0,\"status\":1,\"message\":\"Notificacion recibida correctamente\",\"values\":true}";
                 try {
                     String query = ex.getRequestURI().getRawQuery();
                     procesar(new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)
@@ -40,7 +41,7 @@ public class WebhookPagoFacil {
                 } catch (Exception e) {
                     Logger.getLogger(WebhookPagoFacil.class.getName()).log(Level.SEVERE, "Webhook PagoFácil", e);
                     codigo = 500;
-                    respuesta = "{\"error\":\"Error interno\"}";
+                    respuesta = "{\"error\":1,\"status\":0,\"message\":\"Error interno\",\"values\":false}";
                 }
                 byte[] out = respuesta.getBytes(StandardCharsets.UTF_8);
                 ex.getResponseHeaders().add("Content-Type", "application/json");
@@ -58,14 +59,23 @@ public class WebhookPagoFacil {
 
     private static void procesar(String datos) throws Exception {
         System.out.println("Webhook PagoFácil recibido: " + datos);
-        String estado = dato(datos, "Estado", "TransactionStatus");
         String pedido = dato(datos, "PedidoID", "PaymentNumber");
-        if (pedido == null || !("2".equals(estado) || "pagado".equalsIgnoreCase(estado))) {
+        if (pedido == null) {
             return;
         }
-        String transaccion = dato(datos, "TransaccionDePago", "TransactionId", "transactionId");
-        String[] aviso = NCuota.confirmarPagoFacil(pedido, transaccion == null ? pedido : transaccion); // {email, mensaje}
+        // El aviso no viene firmado: se confirma con PagoFácil (/query-transaction) para que nadie pueda inventarlo.
+        String estado = PagoFacil.configurado() ? PagoFacil.estado(pedido) : dato(datos, "Estado", "TransactionStatus");
+        if (PagoFacil.esPagado(estado)) {
+            String metodo = dato(datos, "MetodoPago");
+            confirmar(pedido, metodo == null ? pedido : metodo + " " + pedido);
+        }
+    }
+
+    /** Marca la cuota de ese pedido como pagada y avisa al cliente por correo. No hace nada si ya estaba pagada. */
+    static void confirmar(String pedido, String comprobante) throws Exception {
+        String[] aviso = NCuota.confirmarPagoFacil(pedido, comprobante); // {email, mensaje}
         if (aviso != null) {
+            System.out.println("PagoFácil: pago confirmado del pedido " + pedido);
             Email email = new Email(aviso[0], Email.SUBJECT, HtmlBuilder.texto("Pago QR recibido", aviso[1]));
             new Thread(new SendEmailThread(email), "Send email Thread").start();
         }

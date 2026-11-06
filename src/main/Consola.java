@@ -28,6 +28,9 @@ public class Consola extends Aplication {
     private void ejecutar(String remitente) throws IOException {
         Files.createDirectories(CARPETA);
         WebhookPagoFacil.iniciar();
+        Thread verificador = new Thread(new pagos.VerificadorPagos(), "PagoFacil Thread");
+        verificador.setDaemon(true);
+        verificador.start();
         System.out.println("=== Modo local (sin correo) ===");
         System.out.println("Escriba un comando igual que en el asunto del correo, por ejemplo: HELP o LISUSU[\"*\"]");
         System.out.println("Cambiar de remitente: como juan@gmail.com   |   Terminar: salir");

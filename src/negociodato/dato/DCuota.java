@@ -47,6 +47,15 @@ public class DCuota extends Dato {
                 + "JOIN usuario u ON u.id = c.cliente_id WHERE q.id = ? AND q.estado <> 'pagada'", id);
     }
 
+    /** Pedidos de QR generados que siguen sin pagar (para consultarlos en PagoFácil). */
+    public static List<String> pedidosPendientes() throws SQLException {
+        List<String> pedidos = new java.util.ArrayList<>();
+        for (String[] f : consultar("SELECT nro_transaccion FROM cuota WHERE estado <> 'pagada' AND nro_transaccion LIKE 'CUOTA-%'")) {
+            pedidos.add(f[0]);
+        }
+        return pedidos;
+    }
+
     /** Guarda el número de pedido enviado a PagoFácil; el webhook lo usa para saber qué cuota se pagó. */
     public static int guardarPedido(int id, String pedido) throws SQLException {
         return ejecutar("UPDATE cuota SET nro_transaccion=? WHERE id=? AND estado<>'pagada'", pedido, id);

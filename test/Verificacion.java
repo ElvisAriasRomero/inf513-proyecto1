@@ -105,6 +105,12 @@ public class Verificacion {
         check(WebhookPagoFacil.dato(avisoForm, "PedidoID", "PaymentNumber").equals("CUOTA-9-1"), "webhook formulario");
         check(WebhookPagoFacil.dato(avisoForm, "Estado", "TransactionStatus").equals("2"), "webhook formulario estado");
         check(Permisos.permitido("Cliente", Token.CUOTA, Token.QR), "cliente paga con QR");
+        String lista = "{\"error\":0,\"status\":2006,\"values\":[{\"paymentMethodId\":4,\"paymentMethodName\":\"QR\",\"currencyName\":\"BOB\"}]}";
+        check(PagoFacil.campo(lista, "paymentMethodId").equals("4"), "list-enabled-services");
+        String consulta = "{\"error\":0,\"status\":2008,\"values\":{\"companyTransactionId\":\"CUOTA-5-1\",\"paymentStatus\":2,\"amount\":\"1.00\"}}";
+        check(PagoFacil.esPagado(PagoFacil.campo(consulta, "paymentStatus")), "query-transaction pagado");
+        check(!PagoFacil.esPagado("1") && !PagoFacil.esPagado(null), "pendiente no cuenta como pagado");
+        check(PagoFacil.campo("{\"error\":0,\"values\":{\"expiresInMinutes\":789.71}}", "expiresInMinutes").equals("789.71"), "vida del token");
         check(!Permisos.permitido("Cliente", Token.CUOTA, Token.PAGAR), "cliente no registra pagos a mano");
 
         // --- Permisos ---

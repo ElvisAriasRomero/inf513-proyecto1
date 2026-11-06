@@ -66,7 +66,9 @@ public class NCuota {
 
         String mensaje = "Cuota " + q[2] + " de la cotización " + q[0] + ": " + q[1] + " Bs"
                 + (Constantes.PAGOFACIL_MODO_PRUEBA ? " (modo prueba: el banco cobra 0.01 Bs)" : "")
-                + ". Escanee el QR con la app de su banco. Al pagar le llegará la confirmación por correo.";
+                + ". Escanee el QR con la app de su banco"
+                + (qr[2] == null || qr[2].isEmpty() ? "" : " antes de " + qr[2])
+                + ". Al pagar le llegará la confirmación por correo.";
         return new String[]{mensaje, qr[0]};
     }
 

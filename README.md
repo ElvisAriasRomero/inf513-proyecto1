@@ -89,29 +89,34 @@ El rol se obtiene del correo de quien envía el comando (tabla `usuario`).
 
 ## Pago con QR de PagoFácil (CU3)
 
-Es el mismo flujo del proyecto taller-web (`PagoFacilService` + webhook), adaptado al correo (`src/pagos/`).
+Implementa la API **PagoFácil QR Master v2** (documento `ServiciosPagoFacil_QrMaster_v1.1.0`), en `src/pagos/`.
+URL base: `https://masterqr.pagofacil.com.bo/api/services/v2`.
 
 ```
 Cliente: QRPCUO["5"]
-   → PagoFácil /login (tcTokenService, tcTokenSecret) → accessToken
-   → PagoFácil /generate-qr (tcCommerceId, pedido CUOTA-5-<hora>) → imagen del QR
+   → /login (tcTokenService, tcTokenSecret) → accessToken (se reutiliza hasta que vence)
+   → /list-enabled-services → paymentMethodId del QR (si no se fijó PAGOFACIL_METODO)
+   → /generate-qr (paymentNumber = pedido CUOTA-5-<hora>) → imagen del QR y fecha de vencimiento
    → el QR llega como imagen dentro del correo de respuesta
-Cliente paga con la app de su banco
-   → PagoFácil avisa a  <PAGOFACIL_CALLBACK_URL>  (Estado = 2, PedidoID = CUOTA-5-<hora>)
-   → la cuota queda pagada sola (metodo QR) y al cliente le llega la confirmación
+Cliente paga con la app de su banco. El sistema se entera de dos formas:
+   a) Consulta: cada minuto pregunta a /query-transaction por los QR sin pagar (no necesita ngrok)
+   b) Callback: PagoFácil avisa a <PAGOFACIL_CALLBACK_URL>; el aviso se confirma con /query-transaction
+   → la cuota queda pagada (metodo QR) y al cliente le llega la confirmación por correo
    → si era la última cuota, la cotización pasa a pagada
 ```
 
-Configuración en `Constantes.java` o en variables de entorno con los mismos nombres del `.env` de taller-web:
+Configuración por variables de entorno (las credenciales las entrega PagoFácil):
 
 | Variable | Qué es |
 |---|---|
-| `PAGOFACIL_COMMERCE_ID`, `PAGOFACIL_TOKEN_SERVICE`, `PAGOFACIL_TOKEN_SECRET` | Credenciales del comercio (las mismas de taller-web) |
-| `PAGOFACIL_CALLBACK_URL` | URL pública que llega al webhook, por ejemplo `https://xxxx.ngrok-free.app/pagofacil/webhook` |
-| `PAGOFACIL_PUERTO` | Puerto local del webhook (8080). Exponerlo con `ngrok http 8080` |
-| `PAGOFACIL_MODO_PRUEBA` | `true`: al banco se le cobra 0.01 Bs, igual que en taller-web |
+| `PAGOFACIL_TOKEN_SERVICE`, `PAGOFACIL_TOKEN_SECRET` | Credenciales del comercio |
+| `PAGOFACIL_METODO` | `paymentMethodId` del QR (opcional; si no se pone, se usa el primero habilitado) |
+| `PAGOFACIL_CALLBACK_URL` | Opcional. URL pública al webhook, por ejemplo `https://xxxx.ngrok-free.app/pagofacil/webhook` |
+| `PAGOFACIL_PUERTO` | Puerto local del webhook (8080) |
 
-Si el webhook no está expuesto a internet, el QR igual se genera y se paga; en ese caso el Encargado registra el pago a mano con `PAGCUO["id","QR","nro_transaccion","enlace_comprobante"]`.
+En `Constantes.java`, `PAGOFACIL_MODO_PRUEBA = true` cobra 0.01 Bs al banco y marca la cuota pagada por su monto real.
+
+Si PagoFácil no está configurado, el Encargado puede registrar el pago a mano con `PAGCUO["id","QR","nro_transaccion","enlace_comprobante"]`.
 
 ## Scraping (CU6 y CU7)
 
