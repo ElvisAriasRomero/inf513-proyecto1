@@ -116,6 +116,20 @@ public class Verificacion {
         check(Permisos.permitido("Encargado", Token.PAGINA, Token.DENUNCIAR), "encargado denuncia");
         check(Permisos.permitido("Director", Token.USUARIO, Token.ELIMINAR), "director todo");
 
+        // --- Auto-registro y asignación de roles ---
+        interpretar("REGUSU[\"Juan\",\"Pérez\",\"789\",\"777\",\"juanp\",\"clave\"]");
+        check(metodo.equals("usuario") && evento.getAction() == Token.REGISTRAR && evento.getParams().size() == 6, "REGUSU");
+        interpretar("ASIUSU[\"3\",\"2\"]");
+        check(metodo.equals("usuario") && evento.getAction() == Token.ASIGNAR, "ASIUSU");
+        check(Permisos.permitido(null, Token.USUARIO, Token.REGISTRAR), "visitante se registra");
+        check(!Permisos.permitido(null, Token.USUARIO, Token.LISTAR), "visitante no lista usuarios");
+        check(!Permisos.permitido("Encargado", Token.USUARIO, Token.AGREGAR), "encargado no crea usuarios con rol");
+        check(!Permisos.permitido("Encargado", Token.USUARIO, Token.MODIFICAR), "encargado no modifica usuarios");
+        check(!Permisos.permitido("Encargado", Token.USUARIO, Token.ASIGNAR), "encargado no asigna roles");
+        check(Permisos.permitido("Encargado", Token.USUARIO, Token.LISTAR), "encargado lista usuarios");
+        check(Permisos.permitido("Director", Token.USUARIO, Token.ASIGNAR), "director asigna roles");
+        check(!Permisos.permitido("Cliente", Token.USUARIO, Token.ASIGNAR), "cliente no asigna roles");
+
         System.out.println("OK: todas las verificaciones pasaron");
     }
 

@@ -26,11 +26,16 @@ public class HtmlBuilder {
 
     /** Mensaje simple: un título y líneas debajo. */
     public static String texto(String titulo, String... lineas) {
+        return pagina(encabezado(titulo, lineas));
+    }
+
+    /** Título y líneas para combinar con tablas en el mismo correo con pagina(...). */
+    public static String encabezado(String titulo, String... lineas) {
         StringBuilder sb = new StringBuilder("<h2>").append(escapar(titulo)).append("</h2>");
         for (String linea : lineas) {
             sb.append("<h3>").append(escapar(linea)).append("</h3>");
         }
-        return pagina(sb.toString());
+        return sb.toString();
     }
 
     /** Mensaje con el QR de pago adjunto (la imagen viaja en el correo con Content-ID "imagen"). */

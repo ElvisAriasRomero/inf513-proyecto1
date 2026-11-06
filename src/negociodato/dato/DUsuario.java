@@ -16,10 +16,23 @@ public class DUsuario extends Dato {
                 rolId, nombres, apellidos, ciNit, email, telefono, username, password);
     }
 
-    public static int modificar(int id, int rolId, String nombres, String apellidos, String ciNit, String email,
+    /** Auto-registro: siempre con el rol Cliente. Devuelve el id. */
+    public static String registrarCliente(String nombres, String apellidos, String ciNit, String email,
+            String telefono, String username, String password) throws SQLException {
+        return valor("INSERT INTO usuario(rol_id, nombres, apellidos, ci_nit, email, telefono, username, password) "
+                + "SELECT id, ?, ?, ?, ?, ?, ?, ? FROM rol WHERE nombre = 'Cliente' RETURNING id",
+                nombres, apellidos, ciNit, email, telefono, username, password);
+    }
+
+    /** Datos personales; el rol se cambia aparte con asignarRol. */
+    public static int modificar(int id, String nombres, String apellidos, String ciNit, String email,
             String telefono, String username) throws SQLException {
-        return ejecutar("UPDATE usuario SET rol_id=?, nombres=?, apellidos=?, ci_nit=?, email=?, telefono=?, username=? "
-                + "WHERE id=?", rolId, nombres, apellidos, ciNit, email, telefono, username, id);
+        return ejecutar("UPDATE usuario SET nombres=?, apellidos=?, ci_nit=?, email=?, telefono=?, username=? "
+                + "WHERE id=?", nombres, apellidos, ciNit, email, telefono, username, id);
+    }
+
+    public static int asignarRol(int id, int rolId) throws SQLException {
+        return ejecutar("UPDATE usuario SET rol_id=? WHERE id=?", rolId, id);
     }
 
     /** No se borra: tiene cotizaciones, pagos y revisiones a su nombre. */

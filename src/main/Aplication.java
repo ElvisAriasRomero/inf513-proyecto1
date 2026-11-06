@@ -11,6 +11,7 @@ import interpreter.events.TokenEvent;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
@@ -72,7 +73,20 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
 
     @Override
     public void help(TokenEvent e) {
-        responder(e, Token.HELP, s -> HtmlBuilder.tabla("Lista de comandos", DComando.HEADERS, DComando.listar()));
+        responder(e, Token.HELP, s -> HtmlBuilder.tabla(
+                "Comandos disponibles para " + (s.rol == null ? "visitantes" : s.rol), DComando.HEADERS, comandosPara(s.rol)));
+    }
+
+    /** Solo los comandos que ese rol puede usar (se decide con Permisos, igual que al ejecutarlos). */
+    private static List<String[]> comandosPara(String rol) throws SQLException {
+        List<String[]> permitidos = new ArrayList<>();
+        for (String[] fila : DComando.listar()) { // {caso_uso, comando, parametros, ejemplo, quien}
+            Token[] t = Token.comando(fila[1].split(" ")[0]);
+            if (t != null && Permisos.permitido(rol, t[0].getAttribute(), t.length > 1 ? t[1].getAttribute() : 0)) {
+                permitidos.add(fila);
+            }
+        }
+        return permitidos;
     }
 
     @Override
@@ -103,9 +117,19 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
             switch (e.getAction()) {
                 case Token.AGREGAR:
                     return ok("Usuario " + nUsuario.guardar(p) + " registrado");
+                case Token.REGISTRAR:
+                    String id = nUsuario.registrar(s, e.getSender(), p);
+                    return HtmlBuilder.pagina(
+                            HtmlBuilder.encabezado("Registro exitoso",
+                                    "Bienvenido. Quedó registrado como Cliente (usuario " + id + ") con el correo " + e.getSender() + ".",
+                                    "Si necesita otro rol, el Director se lo puede asignar."),
+                            HtmlBuilder.seccion("Sus comandos disponibles", DComando.HEADERS, comandosPara("Cliente")));
                 case Token.MODIFICAR:
                     nUsuario.modificar(p);
                     return ok("Usuario modificado");
+                case Token.ASIGNAR:
+                    nUsuario.asignarRol(s, p);
+                    return ok("Rol asignado. El usuario ya puede usar los comandos de su nuevo rol.");
                 case Token.ELIMINAR:
                     nUsuario.eliminar(s, p);
                     return ok("Usuario desactivado");

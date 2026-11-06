@@ -5,10 +5,10 @@ import java.util.Set;
 
 /**
  * Qué puede hacer cada rol. El rol sale del email de quien envía el comando.
- *  - Director: todo.
- *  - Encargado: todo menos administrar roles y desactivar usuarios.
+ *  - Director: todo. Es el único que crea usuarios con rol, los modifica, les asigna rol o los desactiva.
+ *  - Encargado: todo lo operativo; de usuarios y roles solo puede listar.
  *  - Cliente: ver sus cotizaciones y pagos, aceptarlas o rechazarlas, pagar sus cuotas con QR y subir su material.
- *  - No registrado: solo help.
+ *  - Visitante (correo no registrado): HELP y registrarse solo (queda como Cliente).
  */
 public class Permisos {
 
@@ -29,14 +29,13 @@ public class Permisos {
             return true;
         }
         if (rol == null) {
-            return false;
+            return cu == Token.USUARIO && accion == Token.REGISTRAR;
         }
         switch (rol) {
             case "Director":
                 return true;
             case "Encargado":
-                return !(cu == Token.ROL && accion != Token.LISTAR)
-                        && !(cu == Token.USUARIO && accion == Token.ELIMINAR);
+                return !((cu == Token.ROL || cu == Token.USUARIO) && accion != Token.LISTAR);
             case "Cliente":
                 return CLIENTE.contains(clave(cu, accion));
             default:

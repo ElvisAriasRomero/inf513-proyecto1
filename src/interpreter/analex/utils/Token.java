@@ -58,6 +58,8 @@ public class Token {
     public static final int COTIZACIONES = 220;
     public static final int GRAFICA = 221;
     public static final int QR = 222;
+    public static final int REGISTRAR = 223;
+    public static final int ASIGNAR = 224;
 
     public static final int ERROR_COMMAND = 300;
     public static final int ERROR_CHARACTER = 301;
@@ -71,6 +73,8 @@ public class Token {
 
         crud(ROL, "ROL");
         crud(USUARIO, "USU");
+        comando("REGUSU", USUARIO, REGISTRAR); // auto-registro como Cliente
+        comando("ASIUSU", USUARIO, ASIGNAR);   // asignar rol
         crud(CUENTA, "CUE");
         crud(SERVICIO, "SER");
 
