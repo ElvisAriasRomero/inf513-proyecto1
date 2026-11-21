@@ -39,10 +39,10 @@ public class Constantes {
     // paymentMethodId del QR. Vacío = se pide a /list-enabled-services y se usa el primero habilitado.
     public static final String PAGOFACIL_METODO = env("PAGOFACIL_METODO", "");
     // Callback (opcional): URL pública (ngrok) que apunta al puerto de abajo + /pagofacil/webhook.
-    // Sin callback igual funciona: el sistema consulta /query-transaction cada minuto.
+    // Sin callback igual funciona: el sistema consulta /query-transaction cada 10 segundos.
     public static final String PAGOFACIL_CALLBACK_URL = env("PAGOFACIL_CALLBACK_URL", "https://postman-echo.com/post");
     public static final int PAGOFACIL_PUERTO = Integer.parseInt(env("PAGOFACIL_PUERTO", "8080"));
-    public static final int PAGOFACIL_SEGUNDOS_CONSULTA = 60;
+    public static final int PAGOFACIL_SEGUNDOS_CONSULTA = 10; // PagoFácil pide consultar cada 10 s
     // Modo prueba: al banco se le cobra 0.01 Bs, pero la cuota se marca pagada por su monto real
     public static final boolean PAGOFACIL_MODO_PRUEBA = true;
 

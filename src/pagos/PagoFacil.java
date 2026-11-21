@@ -16,12 +16,19 @@ import static negociodato.utils.Constantes.*;
  * 1. POST /login                 (tcTokenService, tcTokenSecret) → accessToken, se reutiliza hasta que vence
  * 2. POST /list-enabled-services → paymentMethodId del QR (si no se configuró PAGOFACIL_METODO)
  * 3. POST /generate-qr           → qrBase64, transactionId, expirationDate
- * 4. POST /query-transaction     → paymentStatus (lo usa VerificadorPagos cada minuto)
+ * 4. POST /query-transaction     → paymentStatus (lo usa VerificadorPagos cada 10 s)
  * 5. Callback a callbackUrl      → lo recibe WebhookPagoFacil
  */
 public class PagoFacil {
 
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+
+    // paymentStatus de /query-transaction, comprobados con pagos reales (2 = Pagado tardó ~2 días en el ambiente de prueba)
+    public static final String PAGADO = "2";
+    public static final String ANULADO = "4";
+    public static final String REVISION = "5";
+    private static final java.util.Map<String, String> ESTADOS =
+            java.util.Map.of("1", "En proceso", "2", "Pagado", "4", "Anulado", "5", "En revisión");
 
     private static String token;
     private static long tokenVence; // milisegundos
@@ -59,18 +66,29 @@ public class PagoFacil {
         return new String[]{qr, campo(res, "transactionId"), campo(res, "expirationDate")};
     }
 
-    /** paymentStatus de un pedido nuestro (companyTransactionId), o null si PagoFácil no lo informa. */
-    public static String estado(String pedido) throws IOException, InterruptedException {
-        return campo(conToken("/query-transaction", "{\"companyTransactionId\":" + json(pedido) + "}"), "paymentStatus");
+    /**
+     * Estado de un pedido nuestro (companyTransactionId):
+     * {paymentStatus, descripción, pagofacilTransactionId, paymentDate (AAAA-MM-DD o null)}.
+     */
+    public static String[] consultar(String pedido) throws IOException, InterruptedException {
+        String r = conToken("/query-transaction", "{\"companyTransactionId\":" + json(pedido) + "}");
+        String estado = campo(r, "paymentStatus");
+        String descripcion = campo(r, "paymentStatusDescription");
+        String fecha = campo(r, "paymentDate");
+        return new String[]{estado, descripcion != null ? descripcion : ESTADOS.getOrDefault(estado, estado),
+            campo(r, "pagofacilTransactionId"), fecha == null || fecha.equals("null") ? null : fecha};
     }
 
-    /**
-     * ponytail: el documento no publica la tabla de paymentStatus; se toma 2 = pagado, igual que el
-     * "Estado" del callback en taller-web. Confirmarlo con GET /bibliography/paymentStatus y ajustar aquí.
-     */
     public static boolean esPagado(String estado) {
-        return estado != null && (estado.equals("2") || estado.equalsIgnoreCase("pagado")
-                || estado.equalsIgnoreCase("completado") || estado.equalsIgnoreCase("paid"));
+        return PAGADO.equals(estado);
+    }
+
+    /** Lo que se le cobra al banco: en modo prueba siempre 0.01 Bs; si no, el monto con 2 decimales (mínimo 0.01). */
+    public static BigDecimal montoCobrado(BigDecimal monto) {
+        if (PAGOFACIL_MODO_PRUEBA) {
+            return new BigDecimal("0.01");
+        }
+        return monto.setScale(2, java.math.RoundingMode.HALF_UP).max(new BigDecimal("0.01"));
     }
 
     private static String metodoQr() throws IOException, InterruptedException {

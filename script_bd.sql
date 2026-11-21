@@ -49,7 +49,7 @@ CREATE TABLE servicio (
   id          SERIAL PRIMARY KEY,
   nombre      VARCHAR(80) NOT NULL,
   descripcion TEXT,
-  precio      NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+  precio      NUMERIC(10,3) NOT NULL CHECK (precio >= 0),
   estado      BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -58,7 +58,7 @@ CREATE TABLE cotizacion (
   cliente_id INT NOT NULL REFERENCES usuario(id),
   usuario_id INT NOT NULL REFERENCES usuario(id),
   fecha      DATE NOT NULL DEFAULT CURRENT_DATE,
-  total      NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total      NUMERIC(10,3) NOT NULL DEFAULT 0,
   tipo_pago  VARCHAR(10) NOT NULL DEFAULT 'contado'
              CHECK (tipo_pago IN ('contado','cuotas')),
   nro_cuotas INT NOT NULL DEFAULT 1 CHECK (nro_cuotas >= 1),
@@ -72,15 +72,15 @@ CREATE TABLE detalle_cotizacion (
   cotizacion_id   INT NOT NULL REFERENCES cotizacion(id) ON DELETE CASCADE,
   servicio_id     INT NOT NULL REFERENCES servicio(id),
   cantidad        INT NOT NULL CHECK (cantidad > 0),
-  precio_unitario NUMERIC(10,2) NOT NULL,
-  subtotal        NUMERIC(10,2) NOT NULL
+  precio_unitario NUMERIC(10,3) NOT NULL,
+  subtotal        NUMERIC(10,3) NOT NULL
 );
 
 CREATE TABLE cuota (
   id                SERIAL PRIMARY KEY,
   cotizacion_id     INT NOT NULL REFERENCES cotizacion(id) ON DELETE CASCADE,
   nro_cuota         INT NOT NULL,
-  monto             NUMERIC(10,2) NOT NULL CHECK (monto > 0),
+  monto             NUMERIC(10,3) NOT NULL CHECK (monto > 0),
   fecha_vencimiento DATE NOT NULL,
   fecha_pago        DATE,
   metodo            VARCHAR(10) CHECK (metodo IN ('efectivo','QR')),
@@ -221,6 +221,7 @@ INSERT INTO comando (caso_uso, accion, parametro, ejemplo, roles) VALUES
 ('CU3 Pagos', 'PAGCUO (efectivo)', 'PAGCUO["cuota_id","efectivo"]', 'PAGCUO["5","efectivo"]', 'Director, Encargado'),
 ('CU3 Pagos', 'PAGCUO (QR a mano)', 'PAGCUO["cuota_id","QR","nro_transaccion","enlace_del_comprobante"]', 'PAGCUO["5","QR","884512","https://drive.google.com/comprobante"]', 'Director, Encargado'),
 ('CU3 Pagos', 'QRPCUO', 'QRPCUO["cuota_id"]', 'QRPCUO["5"]', 'Todos (el cliente las suyas)'),
+('CU3 Pagos', 'VERCUO', 'VERCUO["cuota_id"]', 'VERCUO["5"]', 'Todos (el cliente las suyas)'),
 ('CU3 Pagos', 'VENCUO', 'VENCUO["*"]', 'VENCUO["*"]', 'Director, Encargado'),
 ('CU4 Material', 'INSMAT', 'INSMAT["cotizacion_id","titulo","enlace_del_archivo","imagen | video"]', 'INSMAT["1","Banner Feria","https://drive.google.com/banner","imagen"]', 'Todos (el cliente las suyas)'),
 ('CU4 Material', 'LISMAT', 'LISMAT["* o cotizacion_id"]', 'LISMAT["1"]', 'Todos (el cliente los suyos)'),

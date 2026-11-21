@@ -252,6 +252,8 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                     String[] qr = nCuota.generarQr(s, p); // {mensaje, qrBase64}
                     enviar(e.getSender(), HtmlBuilder.qr("Pague su cuota con QR", qr[0]), qr[1]);
                     return null; // ya se envió con la imagen adjunta
+                case Token.VER:
+                    return HtmlBuilder.texto("Estado del pago QR", nCuota.verificar(s, p));
                 case Token.VENCIDAS:
                     return HtmlBuilder.tabla("Cuotas por cobrar", DCuota.HEADERS_COBRANZA, nCuota.porCobrar());
                 default:

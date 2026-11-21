@@ -63,14 +63,31 @@ public class DCuota extends Dato {
 
     /**
      * Marca pagada la cuota de ese pedido (solo si sigue sin pagar, así un aviso repetido no hace nada).
+     * fechaPago: la que informa PagoFácil (AAAA-MM-DD); si es null, hoy.
      * Devuelve {id, cotizacion_id, nro_cuota, monto, email del cliente} o null.
      */
-    public static String[] pagarPorPedido(String pedido, String comprobante) throws SQLException {
-        return fila("WITH q AS (UPDATE cuota SET estado='pagada', fecha_pago=CURRENT_DATE, metodo='QR', comprobante=? "
+    public static String[] pagarPorPedido(String pedido, String comprobante, String fechaPago) throws SQLException {
+        return fila("WITH q AS (UPDATE cuota SET estado='pagada', fecha_pago=COALESCE(CAST(? AS date), CURRENT_DATE), "
+                + "metodo='QR', comprobante=? "
                 + "WHERE nro_transaccion=? AND estado<>'pagada' RETURNING id, cotizacion_id, nro_cuota, monto) "
                 + "SELECT q.id, q.cotizacion_id, q.nro_cuota, q.monto, u.email FROM q "
                 + "JOIN cotizacion c ON c.id = q.cotizacion_id JOIN usuario u ON u.id = c.cliente_id",
-                comprobante, pedido);
+                fechaPago, comprobante, pedido);
+    }
+
+    /** Pedido de QR que tiene la cuota sin pagar, o null. */
+    public static String pedidoDe(int id) throws SQLException {
+        return valor("SELECT nro_transaccion FROM cuota WHERE id=? AND estado<>'pagada' AND nro_transaccion LIKE 'CUOTA-%'", id);
+    }
+
+    /** {cotizacion_id, estado} de la cuota, o null si no existe. */
+    public static String[] estadoDe(int id) throws SQLException {
+        return fila("SELECT cotizacion_id, estado FROM cuota WHERE id=?", id);
+    }
+
+    /** PagoFácil anuló el QR: la cuota deja de esperarlo (se puede pedir otro). */
+    public static int liberarPedido(String pedido) throws SQLException {
+        return ejecutar("UPDATE cuota SET nro_transaccion=NULL WHERE nro_transaccion=? AND estado<>'pagada'", pedido);
     }
 
     public static String saldo(int cotizacionId) throws SQLException {

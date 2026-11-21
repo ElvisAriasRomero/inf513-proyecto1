@@ -21,6 +21,7 @@ public class Permisos {
             clave(Token.DETALLE, Token.LISTAR),
             clave(Token.CUOTA, Token.LISTAR),
             clave(Token.CUOTA, Token.QR),
+            clave(Token.CUOTA, Token.VER),
             clave(Token.MATERIAL, Token.AGREGAR),
             clave(Token.MATERIAL, Token.LISTAR));
 

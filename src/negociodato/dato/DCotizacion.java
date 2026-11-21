@@ -57,8 +57,8 @@ public class DCotizacion extends Dato {
                 + "  RETURNING id, total, nro_cuotas) "
                 + "INSERT INTO cuota(cotizacion_id, nro_cuota, monto, fecha_vencimiento) "
                 + "SELECT c.id, g, "
-                + "  CASE WHEN g < c.nro_cuotas THEN ROUND(c.total / c.nro_cuotas, 2) "
-                + "       ELSE c.total - ROUND(c.total / c.nro_cuotas, 2) * (c.nro_cuotas - 1) END, "
+                + "  CASE WHEN g < c.nro_cuotas THEN ROUND(c.total / c.nro_cuotas, 3) "
+                + "       ELSE c.total - ROUND(c.total / c.nro_cuotas, 3) * (c.nro_cuotas - 1) END, "
                 + "  (CURRENT_DATE + (g - 1) * INTERVAL '1 month')::date "
                 + "FROM c, generate_series(1, c.nro_cuotas) g", id);
     }

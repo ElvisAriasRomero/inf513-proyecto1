@@ -57,29 +57,90 @@ public class NCuota {
             throw new IllegalArgumentException("La cuota no existe o ya está pagada");
         }
         NCotizacion.verificarAcceso(s, Integer.parseInt(q[0]));
+        exigirSinPagoEnCurso(id);
 
         String pedido = "CUOTA-" + id + "-" + System.currentTimeMillis();
-        BigDecimal monto = Constantes.PAGOFACIL_MODO_PRUEBA ? new BigDecimal("0.01") : new BigDecimal(q[1]);
-        String[] qr = PagoFacil.generarQr(pedido, monto, q[4], q[5], q[6], q[7], q[3],
+        BigDecimal monto = new BigDecimal(q[1]);
+        BigDecimal cobrado = PagoFacil.montoCobrado(monto);
+        String[] qr = PagoFacil.generarQr(pedido, cobrado, q[4], q[5], q[6], q[7], q[3],
                 "Cuota " + q[2] + " de la cotización " + q[0]);
         DCuota.guardarPedido(id, pedido);
 
         String mensaje = "Cuota " + q[2] + " de la cotización " + q[0] + ": " + q[1] + " Bs"
-                + (Constantes.PAGOFACIL_MODO_PRUEBA ? " (modo prueba: el banco cobra 0.01 Bs)" : "")
+                + (cobrado.compareTo(monto) != 0 ? " (el banco cobra " + cobrado.toPlainString() + " Bs"
+                        + (Constantes.PAGOFACIL_MODO_PRUEBA ? ", modo prueba)" : ")") : "")
                 + ". Escanee el QR con la app de su banco"
                 + (qr[2] == null || qr[2].isEmpty() ? "" : " antes de " + qr[2])
-                + ". Al pagar le llegará la confirmación por correo.";
+                + ". Al pagar le llegará la confirmación por correo. Para revisar el estado envíe VERCUO[\"" + id + "\"].";
         return new String[]{mensaje, qr[0]};
     }
 
-    /** Lo llama el webhook. Devuelve {email del cliente, mensaje} o null si ese pedido no está pendiente. */
-    public static String[] confirmarPagoFacil(String pedido, String transaccion) throws SQLException {
-        String[] q = DCuota.pagarPorPedido(pedido, "PagoFácil " + transaccion); // {id, cotizacion_id, nro_cuota, monto, email}
-        if (q == null) {
-            return null;
+    /**
+     * "Ya pagué": [cuota_id] → pregunta a PagoFácil por el QR de la cuota y, si está Pagado, la confirma.
+     * Devuelve el mensaje con lo que dijo PagoFácil.
+     */
+    public String verificar(Sesion s, List<String> p) throws SQLException, IOException, InterruptedException {
+        int id = entero(p, 0);
+        String[] c = DCuota.estadoDe(id); // {cotizacion_id, estado}
+        if (c == null) {
+            throw new IllegalArgumentException("No existe la cuota " + id);
         }
-        return new String[]{q[4], "Recibimos su pago QR de la cuota " + q[2] + " (" + q[3] + " Bs). "
-            + cerrar(Integer.parseInt(q[1]))};
+        NCotizacion.verificarAcceso(s, Integer.parseInt(c[0]));
+        if (c[1].equals("pagada")) {
+            return "La cuota " + id + " ya está pagada.";
+        }
+        String pedido = DCuota.pedidoDe(id);
+        if (pedido == null) {
+            return "La cuota " + id + " no tiene un QR generado. Pídalo con QRPCUO[\"" + id + "\"].";
+        }
+        return verificarPedido(pedido)[1];
+    }
+
+    /**
+     * Consulta el pedido en PagoFácil (lo usan el verificador de cada 10 s, el callback y VERCUO):
+     * Pagado → confirma la cuota con el n° de transacción y la fecha real de PagoFácil;
+     * Anulado → libera la cuota para pedir otro QR.
+     * Devuelve {estado, mensaje, email del cliente (solo si se acaba de confirmar, para avisarle) }.
+     */
+    public static String[] verificarPedido(String pedido) throws SQLException, IOException, InterruptedException {
+        String[] r = PagoFacil.consultar(pedido); // {paymentStatus, descripción, pagofacilTransactionId, paymentDate}
+        if (PagoFacil.esPagado(r[0])) {
+            String[] q = DCuota.pagarPorPedido(pedido, "PagoFácil Trn " + r[2], r[3]); // {id, cotizacion_id, nro_cuota, monto, email}
+            if (q == null) {
+                return new String[]{r[0], "La cuota ya estaba registrada como pagada.", null};
+            }
+            return new String[]{r[0], "Recibimos su pago QR de la cuota " + q[2] + " (" + q[3] + " Bs). "
+                + cerrar(Integer.parseInt(q[1])), q[4]};
+        }
+        if (PagoFacil.ANULADO.equals(r[0])) {
+            DCuota.liberarPedido(pedido);
+            return new String[]{r[0], "PagoFácil anuló este QR (venció sin pagarse). Pida uno nuevo con QRPCUO.", null};
+        }
+        if (PagoFacil.REVISION.equals(r[0])) {
+            return new String[]{r[0], "El banco ya cobró y PagoFácil tiene el pago en revisión. "
+                + "Se confirmará solo cuando lo apruebe (en pruebas puede tardar hasta 2 días).", null};
+        }
+        return new String[]{r[0], "PagoFácil todavía no registra el pago (estado: " + r[1] + ").", null};
+    }
+
+    /**
+     * No se genera otro QR si el anterior ya fue cobrado o sigue vigente: si el cliente pagara el viejo,
+     * ese pago se perdería. Si PagoFácil ya lo tiene Pagado, se confirma ahí mismo.
+     */
+    private static void exigirSinPagoEnCurso(int cuotaId) throws SQLException, IOException, InterruptedException {
+        String previo = DCuota.pedidoDe(cuotaId);
+        if (previo == null || !PagoFacil.configurado()) {
+            return;
+        }
+        String[] v = verificarPedido(previo);
+        if (PagoFacil.esPagado(v[0]) || PagoFacil.REVISION.equals(v[0])) {
+            throw new IllegalArgumentException(v[1]);
+        }
+        long minutos = (System.currentTimeMillis() - pagos.VerificadorPagos.hora(previo)) / 60_000;
+        if (!PagoFacil.ANULADO.equals(v[0]) && minutos < 10) {
+            throw new IllegalArgumentException("Ya tiene un QR vigente para esta cuota (generado hace " + minutos
+                    + " min). Páguelo o espere unos minutos a que venza para pedir otro.");
+        }
     }
 
     /** Si ya no queda nada por pagar, la cotización pasa a pagada. */

@@ -99,7 +99,7 @@ Cliente: QRPCUO["5"]
    → /generate-qr (paymentNumber = pedido CUOTA-5-<hora>) → imagen del QR y fecha de vencimiento
    → el QR llega como imagen dentro del correo de respuesta
 Cliente paga con la app de su banco. El sistema se entera de dos formas:
-   a) Consulta: cada minuto pregunta a /query-transaction por los QR sin pagar (no necesita ngrok)
+   a) Consulta: cada 10 segundos pregunta a /query-transaction por los QR sin pagar (no necesita ngrok)
    b) Callback: PagoFácil avisa a <PAGOFACIL_CALLBACK_URL>; el aviso se confirma con /query-transaction
    → la cuota queda pagada (metodo QR) y al cliente le llega la confirmación por correo
    → si era la última cuota, la cotización pasa a pagada

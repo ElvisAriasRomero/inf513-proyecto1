@@ -90,6 +90,7 @@ public class Token {
         comando("LISCUO", CUOTA, LISTAR);
         comando("PAGCUO", CUOTA, PAGAR);
         comando("QRPCUO", CUOTA, QR);
+        comando("VERCUO", CUOTA, VER);       // "ya pagué": consulta el QR en PagoFácil
         comando("VENCUO", CUOTA, VENCIDAS);
 
         comando("INSMAT", MATERIAL, AGREGAR);

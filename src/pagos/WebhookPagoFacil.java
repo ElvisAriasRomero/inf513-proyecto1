@@ -63,20 +63,17 @@ public class WebhookPagoFacil {
         if (pedido == null) {
             return;
         }
-        // El aviso no viene firmado: se confirma con PagoFácil (/query-transaction) para que nadie pueda inventarlo.
-        String estado = PagoFacil.configurado() ? PagoFacil.estado(pedido) : dato(datos, "Estado", "TransactionStatus");
-        if (PagoFacil.esPagado(estado)) {
-            String metodo = dato(datos, "MetodoPago");
-            confirmar(pedido, metodo == null ? pedido : metodo + " " + pedido);
+        // El aviso no viene firmado: no se le cree, se consulta a PagoFácil (/query-transaction) para que nadie pueda inventarlo.
+        if (PagoFacil.configurado()) {
+            avisar(pedido, NCuota.verificarPedido(pedido));
         }
     }
 
-    /** Marca la cuota de ese pedido como pagada y avisa al cliente por correo. No hace nada si ya estaba pagada. */
-    static void confirmar(String pedido, String comprobante) throws Exception {
-        String[] aviso = NCuota.confirmarPagoFacil(pedido, comprobante); // {email, mensaje}
-        if (aviso != null) {
+    /** Si la cuota se acaba de confirmar ({estado, mensaje, email}), avisa al cliente por correo. */
+    static void avisar(String pedido, String[] resultado) {
+        if (resultado[2] != null) {
             System.out.println("PagoFácil: pago confirmado del pedido " + pedido);
-            Email email = new Email(aviso[0], Email.asunto(), HtmlBuilder.texto("Pago QR recibido", aviso[1]));
+            Email email = new Email(resultado[2], Email.asunto(), HtmlBuilder.texto("Pago QR recibido", resultado[1]));
             new Thread(new SendEmailThread(email), "Send email Thread").start();
         }
     }

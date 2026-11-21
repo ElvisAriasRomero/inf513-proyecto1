@@ -110,6 +110,12 @@ public class Verificacion {
         String consulta = "{\"error\":0,\"status\":2008,\"values\":{\"companyTransactionId\":\"CUOTA-5-1\",\"paymentStatus\":2,\"amount\":\"1.00\"}}";
         check(PagoFacil.esPagado(PagoFacil.campo(consulta, "paymentStatus")), "query-transaction pagado");
         check(!PagoFacil.esPagado("1") && !PagoFacil.esPagado(null), "pendiente no cuenta como pagado");
+        check(!PagoFacil.esPagado(PagoFacil.REVISION) && !PagoFacil.esPagado(PagoFacil.ANULADO), "revisión y anulado no son pagado");
+        check(PagoFacil.montoCobrado(new java.math.BigDecimal("0.002")).compareTo(new java.math.BigDecimal("0.01")) == 0,
+                "al banco se le cobra mínimo 0.01");
+        interpretar("VERCUO[\"5\"]");
+        check(metodo.equals("cuota") && evento.getAction() == Token.VER, "VERCUO");
+        check(Permisos.permitido("Cliente", Token.CUOTA, Token.VER), "cliente consulta su pago QR");
         check(PagoFacil.campo("{\"error\":0,\"values\":{\"expiresInMinutes\":789.71}}", "expiresInMinutes").equals("789.71"), "vida del token");
         check(!Permisos.permitido("Cliente", Token.CUOTA, Token.PAGAR), "cliente no registra pagos a mano");
 
