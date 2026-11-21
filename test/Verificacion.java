@@ -84,6 +84,16 @@ public class Verificacion {
         check(metodo.equals("cuota"), "PAGCUO dentro del rango 2 a 4 (la regla de QR la valida el negocio)");
         interpretar("LISUSU");
         check(metodo.equals("usuario"), "listar sin parámetros");
+
+        // El cliente pide un servicio por su cuenta (siempre al contado)
+        interpretar("SOLCOT[\"1\",\"2\"]");
+        check(metodo.equals("cotizacion") && evento.getAction() == Token.SOLICITAR, "SOLCOT");
+        interpretar("SOLCOT[\"1\"]");
+        check(metodo.equals("cotizacion"), "SOLCOT sin cantidad");
+        check(Permisos.permitido("Cliente", Token.COTIZACION, Token.SOLICITAR), "cliente solicita");
+        check(!Permisos.permitido("Cliente", Token.DETALLE, Token.AGREGAR), "cliente no agrega servicios (crea otra cotización)");
+        check(!Permisos.permitido("Cliente", Token.COTIZACION, Token.AGREGAR), "cliente no usa INSCOT (no elige cuotas)");
+        check(!Permisos.permitido("Cliente", Token.COTIZACION, Token.MODIFICAR), "cliente no cambia a cuotas");
         interpretar("REGUSU[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\"][\"extra\"]");
         check(metodo.equals("error") && evento.getAction() == Token.ERROR_CHARACTER, "texto después del corchete de cierre");
         interpretar("LISUSU[\"*\"]   ");
@@ -145,7 +155,7 @@ public class Verificacion {
         // --- Permisos ---
         check(Permisos.permitido(null, Token.HELP, 0), "help sin registro");
         check(!Permisos.permitido(null, Token.COTIZACION, Token.LISTAR), "no registrado bloqueado");
-        check(Permisos.permitido("Cliente", Token.COTIZACION, Token.APROBAR), "cliente acepta cotización");
+        check(!Permisos.permitido("Cliente", Token.COTIZACION, Token.APROBAR), "cliente ya no aprueba (SOLCOT queda aprobada)");
         check(!Permisos.permitido("Cliente", Token.PAUTA, Token.AGREGAR), "cliente no programa pautas");
         check(!Permisos.permitido("Encargado", Token.ROL, Token.AGREGAR), "encargado no crea roles");
         check(Permisos.permitido("Encargado", Token.PAGINA, Token.DENUNCIAR), "encargado denuncia");
@@ -165,6 +175,7 @@ public class Verificacion {
         check(Permisos.permitido("Director", Token.USUARIO, Token.ASIGNAR), "director asigna roles");
         check(!Permisos.permitido("Cliente", Token.USUARIO, Token.ASIGNAR), "cliente no asigna roles");
 
+        check(main.HtmlBuilder.monto("0.020").equals("0.02") && main.HtmlBuilder.monto("150.000").equals("150") && main.HtmlBuilder.monto("Juan").equals("Juan"), "montos sin ceros de más");
         System.out.println("OK: todas las verificaciones pasaron");
     }
 

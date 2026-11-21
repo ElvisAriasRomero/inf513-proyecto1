@@ -48,6 +48,12 @@ public class DUsuario extends Dato {
                 + "FROM usuario u JOIN rol r ON r.id = u.rol_id ORDER BY u.id");
     }
 
+    /** Correos del Director y los Encargados (a quienes se avisa lo que hace un cliente). */
+    public static List<String[]> correosDelPersonal() throws SQLException {
+        return consultar("SELECT u.email FROM usuario u JOIN rol r ON r.id = u.rol_id "
+                + "WHERE r.nombre IN ('Director', 'Encargado')");
+    }
+
     /** {id, rol} del usuario con ese correo, o null. */
     public static String[] sesion(String email) throws SQLException {
         return fila("SELECT u.id, r.nombre FROM usuario u JOIN rol r ON r.id = u.rol_id "

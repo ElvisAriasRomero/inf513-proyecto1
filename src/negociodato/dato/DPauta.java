@@ -20,11 +20,11 @@ public class DPauta extends Dato {
                 tipo, inicio, fin, materialId, cuentaId);
     }
 
-    /** Pauta activa de la misma cuenta que se cruza con [inicio, fin), o null. */
+    /** En vivo activo de la misma cuenta que se cruza con [inicio, fin), o null. */
     public static String[] choque(int cuentaId, LocalDateTime inicio, LocalDateTime fin) throws SQLException {
         return fila("SELECT id, tipo, TO_CHAR(fecha_hora_inicio, 'YYYY-MM-DD HH24:MI'), "
                 + "TO_CHAR(fecha_hora_fin, 'YYYY-MM-DD HH24:MI') FROM pauta "
-                + "WHERE cuenta_red_social_id = ? AND estado <> 'cancelada' "
+                + "WHERE cuenta_red_social_id = ? AND tipo = 'en_vivo' AND estado <> 'cancelada' "
                 + "AND fecha_hora_inicio < ? AND fecha_hora_fin > ?", cuentaId, fin, inicio);
     }
 

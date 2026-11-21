@@ -61,7 +61,7 @@ public class HtmlBuilder {
         for (String[] fila : filas) {
             sb.append("<tr>");
             for (String v : fila) {
-                sb.append("<td>").append(escapar(v)).append("</td>");
+                sb.append("<td>").append(escapar(monto(v))).append("</td>");
             }
             sb.append("</tr>");
         }
@@ -94,6 +94,12 @@ public class HtmlBuilder {
                 + "<h1>" + TITULO + "</h1>" + String.join("", secciones)
                 + "<p class=\"pie\">Grupo 13 · Tecnología Web · Envíe <b>HELP</b> para ver los comandos</p>"
                 + "</body></html>";
+    }
+
+    /** Montos NUMERIC(10,3) sin ceros de más: 0.020 → 0.02, 150.000 → 150. */
+    public static String monto(String v) {
+        return v != null && v.matches("\\d+\\.\\d{3}")
+                ? new java.math.BigDecimal(v).stripTrailingZeros().toPlainString() : v;
     }
 
     /** Los datos vienen de los usuarios: se escapan para que no inyecten HTML en el correo. */

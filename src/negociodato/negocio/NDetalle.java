@@ -6,7 +6,10 @@ import negociodato.dato.DCotizacion;
 import negociodato.dato.DDetalle;
 import static negociodato.utils.Params.*;
 
-/** CU3 - Servicios de una cotización. Cada cambio recalcula el total. */
+/**
+ * CU3 - Servicios de una cotización. Cada cambio recalcula el total.
+ * Agregar y quitar es del Director o el Encargado; el cliente solo los ve (para otro pedido crea otra cotización).
+ */
 public class NDetalle {
 
     /** [cotizacion_id; servicio_id; cantidad] */

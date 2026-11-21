@@ -119,11 +119,11 @@ CREATE TABLE pauta (
                        CHECK (estado IN ('programada','publicada','cancelada')),
   CHECK (fecha_hora_fin > fecha_hora_inicio),
   CHECK (estado <> 'publicada' OR url_publicacion IS NOT NULL),
-  -- en una misma cuenta no se cruzan los horarios
+  -- en una misma cuenta no se cruzan los en vivo (post, historia y reel sí pueden coincidir)
   EXCLUDE USING gist (
     cuenta_red_social_id WITH =,
     tstzrange(fecha_hora_inicio, fecha_hora_fin, '[)') WITH &&
-  ) WHERE (estado <> 'cancelada')
+  ) WHERE (tipo = 'en_vivo' AND estado <> 'cancelada')
 );
 
 -- ===================== CU6 =====================
@@ -208,8 +208,9 @@ INSERT INTO comando (caso_uso, accion, parametro, ejemplo, roles) VALUES
 ('CU3 Cotización', 'ELICOT', 'ELICOT["id"]', 'ELICOT["1"]', 'Director, Encargado'),
 ('CU3 Cotización', 'LISCOT', 'LISCOT["*"]', 'LISCOT["*"]', 'Todos (el cliente ve las suyas)'),
 ('CU3 Cotización', 'VERCOT', 'VERCOT["id"]', 'VERCOT["1"]', 'Todos (el cliente ve las suyas)'),
-('CU3 Cotización', 'APRCOT', 'APRCOT["id"]', 'APRCOT["1"]', 'Todos (el cliente las suyas)'),
-('CU3 Cotización', 'RECCOT', 'RECCOT["id"]', 'RECCOT["1"]', 'Todos (el cliente las suyas)'),
+('CU3 Cotización', 'APRCOT', 'APRCOT["id"]', 'APRCOT["1"]', 'Director, Encargado'),
+('CU3 Cotización', 'RECCOT', 'RECCOT["id"]', 'RECCOT["1"]', 'Director, Encargado'),
+('CU3 Cotización', 'SOLCOT', 'SOLCOT["servicio_id","cantidad"]', 'SOLCOT["1","2"]', 'Cliente (queda aprobada, pago único solo con QR)'),
 ('CU3 Cotización', 'INSDET', 'INSDET["cotizacion_id","servicio_id","cantidad"]', 'INSDET["1","3","2"]', 'Director, Encargado'),
 ('CU3 Cotización', 'ELIDET', 'ELIDET["id_detalle"]', 'ELIDET["4"]', 'Director, Encargado'),
 ('CU3 Cotización', 'LISDET', 'LISDET["cotizacion_id"]', 'LISDET["1"]', 'Todos (el cliente las suyas)'),

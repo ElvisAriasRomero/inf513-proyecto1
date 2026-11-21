@@ -34,6 +34,10 @@ public class NCuota {
      */
     public String pagar(Sesion s, List<String> p) throws SQLException {
         String metodo = opcion(p, 1, "efectivo", "QR");
+        if (metodo.equals("efectivo") && solicitadaPorElCliente(entero(p, 0))) {
+            throw new IllegalArgumentException("Esta cotización la pidió el cliente con SOLCOT: se paga solo con QR. "
+                    + "El cliente debe enviar QRPCUO[\"" + entero(p, 0) + "\"].");
+        }
         String nro = null;
         String comprobante = null;
         if (metodo.equals("QR")) {
@@ -141,6 +145,16 @@ public class NCuota {
             throw new IllegalArgumentException("Ya tiene un QR vigente para esta cuota (generado hace " + minutos
                     + " min). Páguelo o espere unos minutos a que venza para pedir otro.");
         }
+    }
+
+    /** La cotización de la cuota la creó el propio cliente (SOLCOT): esas se pagan solo con QR. */
+    private static boolean solicitadaPorElCliente(int cuotaId) throws SQLException {
+        String[] c = DCuota.estadoDe(cuotaId); // {cotizacion_id, estado}
+        if (c == null) {
+            return false; // la cuota no existe: lo informa el pago
+        }
+        String[] cot = DCotizacion.clienteYAutorDe(Integer.parseInt(c[0])); // {cliente_id, usuario_id}
+        return cot != null && cot[0].equals(cot[1]);
     }
 
     /** Si ya no queda nada por pagar, la cotización pasa a pagada. */

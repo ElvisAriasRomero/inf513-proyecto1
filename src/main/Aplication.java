@@ -212,6 +212,12 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                 case Token.RECHAZAR:
                     nCotizacion.rechazar(s, p);
                     return ok("Cotización rechazada");
+                case Token.SOLICITAR:
+                    String[] sol = nCotizacion.solicitar(s, p); // {id, total, cuota_id}
+                    return ok("Cotización " + sol[0] + " creada: " + sol[1] + " Bs, pago único solo con QR. "
+                            + "1) Pague con QRPCUO[\"" + sol[2] + "\"]. "
+                            + "2) Luego suba su material con INSMAT[\"" + sol[0] + "\",\"titulo\",\"enlace_del_archivo\",\"imagen | video\"]. "
+                            + "El Director programará la fecha y hora de la publicación.");
                 default:
                     return accionNoValida();
             }
@@ -267,7 +273,16 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
         responder(e, Token.MATERIAL, s -> {
             switch (e.getAction()) {
                 case Token.AGREGAR:
-                    return ok("Material " + nMaterial.guardar(s, p) + " recibido. Queda pendiente de revisión.");
+                    String mat = nMaterial.guardar(s, p);
+                    if (s.esCliente()) {
+                        avisarAlPersonal("Material nuevo de un cliente", "El cliente " + e.getSender()
+                                + " subió el material " + mat + " (\"" + p.get(1) + "\") de la cotización " + p.get(0)
+                                + ", ya pagada. Revíselo en " + p.get(2) + " y apruébelo con APRMAT[\"" + mat
+                                + "\"] o rechácelo con RECMAT[\"" + mat + "\",\"motivo\"]. "
+                                + "Luego programe la publicación con INSPAU.");
+                    }
+                    return ok("Material " + mat + " recibido. Queda pendiente de revisión: "
+                            + "el Director lo revisará y programará la fecha y hora de la publicación.");
                 case Token.LISTAR:
                     return HtmlBuilder.tabla("Material publicitario", DMaterial.HEADERS, nMaterial.listar(s, p));
                 case Token.APROBAR:
@@ -397,6 +412,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                 motivo = "Comando desconocido: no se reconoce \"" + p.get(1) + "\" como un comando válido.";
         }
         Bitacora.acceso(e.getSender() + " | " + p.get(0) + " | ERROR | " + motivo);
+        System.out.println(e.getSender() + "   Error: " + p.get(0) + "   " + motivo);
         Bitacora.error(e.getSender() + " | " + p.get(0) + " | " + motivo, null);
         enviar(e.getSender(), HtmlBuilder.texto("Error", "Error: " + motivo,
                 "Comando recibido: " + p.get(0), "Envíe HELP para ver la lista de comandos."));
@@ -409,7 +425,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
      * "Éxito" con el resultado, o "Error: [descripción del fallo]". Todo queda en logs/access.log y logs/error.log.
      */
     private void responder(TokenEvent e, int cu, Accion accion) {
-        String comando = Token.codigo(cu, e.getAction()) + e.getParams();
+        String comando = comoAsunto(Token.codigo(cu, e.getAction()), e.getParams());
         String html = null;
         String error = null;
         Throwable causa = null;   // solo para fallos inesperados, que van con su traza a error.log
@@ -444,9 +460,11 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
         if (error != null) {
             html = HtmlBuilder.texto("Error", "Error: " + error);
             Bitacora.acceso(e.getSender() + " | " + comando + " | ERROR | " + error);
+            System.out.println(e.getSender() + "   Error: " + comando + "   " + error);
             Bitacora.error(e.getSender() + " | " + comando + " | " + error, causa);
         } else {
             Bitacora.acceso(e.getSender() + " | " + comando + " | ÉXITO");
+            System.out.println(e.getSender() + "   Éxito: " + comando);
         }
         if (html != null) {
             enviar(e.getSender(), html);
@@ -474,12 +492,28 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
         }
     }
 
+    /** El comando como se escribe en el asunto: SOLCOT["1","2"] (para la terminal y los logs). */
+    private static String comoAsunto(String codigo, List<String> params) {
+        return params.isEmpty() ? codigo : codigo + "[\"" + String.join("\",\"", params) + "\"]";
+    }
+
     private static String ok(String mensaje) {
         return HtmlBuilder.texto("Éxito", "Éxito: " + mensaje);
     }
 
     private static String accionNoValida() {
         throw new IllegalArgumentException("Esa acción no existe para este comando. Envíe HELP para ver la lista.");
+    }
+
+    /** Un correo a cada Director y Encargado. Si falla, no afecta la respuesta al cliente. */
+    private void avisarAlPersonal(String titulo, String mensaje) {
+        try {
+            for (String[] f : negociodato.dato.DUsuario.correosDelPersonal()) {
+                enviar(f[0], HtmlBuilder.texto(titulo, mensaje));
+            }
+        } catch (Exception ex) {
+            Bitacora.error("No se pudo avisar al personal: " + titulo, ex);
+        }
     }
 
     private void enviar(String to, String html) {

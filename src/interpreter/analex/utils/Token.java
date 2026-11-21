@@ -60,6 +60,7 @@ public class Token {
     public static final int QR = 222;
     public static final int REGISTRAR = 223;
     public static final int ASIGNAR = 224;
+    public static final int SOLICITAR = 225;
 
     public static final int ERROR_COMMAND = 300;
     public static final int ERROR_CHARACTER = 301;
@@ -105,6 +106,7 @@ public class Token {
         comando("VERCOT", COTIZACION, VER, 1, 1);
         comando("APRCOT", COTIZACION, APROBAR, 1, 1);
         comando("RECCOT", COTIZACION, RECHAZAR, 1, 1);
+        comando("SOLCOT", COTIZACION, SOLICITAR, 1, 2); // el cliente pide un servicio (siempre al contado)
 
         comando("INSDET", DETALLE, AGREGAR, 3, 3);
         comando("ELIDET", DETALLE, ELIMINAR, 1, 1);

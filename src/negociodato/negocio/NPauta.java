@@ -25,10 +25,11 @@ public class NPauta {
             throw new IllegalArgumentException("La hora de fin debe ser posterior a la de inicio");
         }
 
-        String[] choque = DPauta.choque(cuenta, inicio, fin);
+        // solo los en vivo no se cruzan (en la misma cuenta); post, historia y reel pueden coincidir
+        String[] choque = tipo.equals("en_vivo") ? DPauta.choque(cuenta, inicio, fin) : null;
         if (choque != null) {
-            throw new IllegalArgumentException("Horario ocupado: esa cuenta ya tiene la pauta " + choque[0]
-                    + " (" + choque[1] + ") de " + choque[2] + " a " + choque[3]);
+            throw new IllegalArgumentException("Horario ocupado: esa cuenta ya tiene el en vivo " + choque[0]
+                    + " de " + choque[2] + " a " + choque[3]);
         }
         return existe(DPauta.guardar(material, cuenta, tipo, inicio, fin),
                 "El material debe estar aprobado y la cuenta debe existir");

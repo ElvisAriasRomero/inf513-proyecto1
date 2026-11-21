@@ -26,8 +26,11 @@ public class DCotizacion extends Dato {
                 tipoPago, nroCuotas, id);
     }
 
+    /** Pendiente o aprobada, sin cuotas pagadas ni QR generado (un pago podría estar en camino). */
     public static int eliminar(int id) throws SQLException {
-        return ejecutar("DELETE FROM cotizacion WHERE id=? AND estado='pendiente'", id);
+        return ejecutar("DELETE FROM cotizacion c WHERE c.id=? AND c.estado IN ('pendiente','aprobada') "
+                + "AND NOT EXISTS (SELECT 1 FROM cuota q WHERE q.cotizacion_id=c.id "
+                + "AND (q.estado='pagada' OR q.nro_transaccion IS NOT NULL))", id);
     }
 
     public static List<String[]> listar() throws SQLException {
@@ -44,6 +47,11 @@ public class DCotizacion extends Dato {
 
     public static String clienteDe(int id) throws SQLException {
         return valor("SELECT cliente_id FROM cotizacion WHERE id=?", id);
+    }
+
+    /** {cliente_id, usuario_id (quién la creó)} de la cotización, o null. */
+    public static String[] clienteYAutorDe(int id) throws SQLException {
+        return fila("SELECT cliente_id, COALESCE(usuario_id::text, '') FROM cotizacion WHERE id=?", id);
     }
 
     /**

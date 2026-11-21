@@ -139,7 +139,7 @@ rol ─────────< usuario >────────────�
 
 **CU8 (reportes)** no tiene tabla: consulta las anteriores.
 
-**Reglas en la base:** restricciones `CHECK` de estados y valores; una misma cuenta no puede tener dos pautas en horarios cruzados (`EXCLUDE USING gist`, extensión `btree_gist`); al eliminar, lo que pertenece al registro se borra en cascada y las referencias a "quién lo hizo" quedan vacías.
+**Reglas en la base:** restricciones `CHECK` de estados y valores; una misma cuenta no puede tener dos en vivo en horarios cruzados (post, historia y reel sí pueden coincidir) (`EXCLUDE USING gist`, extensión `btree_gist`); al eliminar, lo que pertenece al registro se borra en cascada y las referencias a "quién lo hizo" quedan vacías.
 
 ---
 
@@ -249,7 +249,7 @@ Se crean en la carpeta `logs/` al iniciar el programa:
 - La cotización solo se modifica mientras está **pendiente**; al aprobarla se generan las cuotas (al contado, 1 cuota; en cuotas, una por mes).
 - Pagos en efectivo o QR. Cuando se pagan todas las cuotas, la cotización pasa a **pagada**; las cuotas con fecha pasada se marcan **vencidas**.
 - El material se acepta cuando la cotización tiene al menos una cuota pagada.
-- La pauta necesita material **aprobado**, y en una misma cuenta los horarios no se cruzan.
+- La pauta necesita material **aprobado**, y en una misma cuenta los en vivo no se cruzan (post, historia y reel pueden coincidir).
 
 ## 10. Pago con QR (PagoFácil QR Master v2)
 

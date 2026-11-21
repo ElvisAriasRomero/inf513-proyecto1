@@ -7,7 +7,8 @@ import java.util.Set;
  * Qué puede hacer cada rol. El rol sale del email de quien envía el comando.
  *  - Director: todo. Es el único que crea usuarios con rol, los modifica, les asigna rol o los elimina.
  *  - Encargado: todo lo operativo; de usuarios y roles solo puede listar.
- *  - Cliente: ver sus cotizaciones y pagos, aceptarlas o rechazarlas, pagar sus cuotas con QR y subir su material.
+ *  - Cliente (virtual): pedir un servicio (SOLCOT, al contado y ya aprobado), pagarlo con QR, subir su material
+ *    y ver sus cotizaciones, cuotas y material. No agrega ni quita servicios: para otro pedido crea otra cotización.
  *  - Visitante (correo no registrado): HELP y registrarse solo (queda como Cliente).
  */
 public class Permisos {
@@ -16,8 +17,7 @@ public class Permisos {
             clave(Token.SERVICIO, Token.LISTAR),
             clave(Token.COTIZACION, Token.LISTAR),
             clave(Token.COTIZACION, Token.VER),
-            clave(Token.COTIZACION, Token.APROBAR),
-            clave(Token.COTIZACION, Token.RECHAZAR),
+            clave(Token.COTIZACION, Token.SOLICITAR),   // pide un servicio: ya aprobada, al contado, solo QR
             clave(Token.DETALLE, Token.LISTAR),
             clave(Token.CUOTA, Token.LISTAR),
             clave(Token.CUOTA, Token.QR),
