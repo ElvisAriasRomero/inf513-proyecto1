@@ -47,9 +47,9 @@ public class NUsuario {
     public void eliminar(Sesion s, List<String> p) throws SQLException {
         int id = entero(p, 0);
         if (id == s.id) {
-            throw new IllegalArgumentException("No puede desactivar su propio usuario");
+            throw new IllegalArgumentException("No puede eliminar su propio usuario");
         }
-        existe(DUsuario.desactivar(id), "El usuario no existe");
+        existe(DUsuario.eliminar(id), "El usuario no existe");
     }
 
     public List<String[]> listar() throws SQLException {

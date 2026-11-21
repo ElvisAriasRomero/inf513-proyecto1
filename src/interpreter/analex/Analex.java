@@ -19,6 +19,7 @@ public class Analex {
     public static final char NL = 10;
     public static final char CR = 13;
     public static final char COMILLA = '"';
+    public static final char ESCAPE = '\\';
 
     private final Cinta cinta;
     private final TSParams tsp;
@@ -91,6 +92,16 @@ public class Analex {
         char c = cinta.CC();
 
         if (c == EOF || isEndParams(c)) {
+            if (isEndParams(c)) {
+                // Después del corchete de cierre no puede venir nada más: CODIGO["a","b"]["c"] es sintaxis inválida
+                cinta.forward();
+                saltarEspacios();
+                if (cinta.CC() != EOF) {
+                    ac = "" + cinta.CC();
+                    R = new Token(Token.ERROR, Token.ERROR_CHARACTER);
+                    return;
+                }
+            }
             ac = "";
             R = new Token(Token.END);
             return;
@@ -101,13 +112,24 @@ public class Analex {
             saltarEspacios();
             StringBuilder param = new StringBuilder();
             if (cinta.CC() == COMILLA) {
-                // "con comillas": se acepta todo (comas, ;, ], tildes, @...) hasta la comilla de cierre
+                // "con comillas": se acepta todo (comas, ;, ], tildes, @...) hasta la comilla de cierre.
+                // Una comilla dentro del dato se escribe \" y una barra invertida \\
                 cinta.forward();
                 while ((c = cinta.CC()) != EOF && c != COMILLA) {
                     if (c < SPACE && !isSpace(c)) {
                         ac = "" + c;
                         R = new Token(Token.ERROR, Token.ERROR_CHARACTER);
                         return;
+                    }
+                    if (c == ESCAPE) {
+                        cinta.forward();
+                        char siguiente = cinta.CC();
+                        if (siguiente == COMILLA || siguiente == ESCAPE) {
+                            c = siguiente;            // \" → "   y   \\ → \
+                        } else {
+                            param.append(ESCAPE);     // cualquier otra \ se deja tal cual
+                            continue;
+                        }
                     }
                     param.append(c);
                     cinta.forward();

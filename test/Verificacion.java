@@ -66,6 +66,29 @@ public class Verificacion {
         interpretar("usuario listar");
         check(metodo.equals("error"), "formato viejo ya no se acepta");
 
+        // Comillas escapadas dentro de un parámetro
+        interpretar("INSMAT[\"1\",\"Banner \\\"Feria\\\" 2026\",\"https://x.com/a\",\"imagen\"]");
+        check(metodo.equals("material") && evento.getParams().get(1).equals("Banner \"Feria\" 2026"), "comilla escapada \\\"");
+        interpretar("INSROL[\"C:\\\\carpeta\"]");
+        check(evento.getParams().get(0).equals("C:\\carpeta"), "barra escapada \\\\");
+
+        // Cantidad exacta de parámetros
+        interpretar("INSUSU[\"3\",\"Juan\"]");
+        check(metodo.equals("error") && evento.getAction() == Token.ERROR_PARAMS
+                && evento.getParams().get(1).equals("INSUSU espera 8 parámetro(s) y recibió 2"), "faltan parámetros");
+        interpretar("ELIUSU[\"2\",\"3\"]");
+        check(metodo.equals("error") && evento.getAction() == Token.ERROR_PARAMS, "sobran parámetros");
+        interpretar("INSCOT[\"3\",\"contado\"]");
+        check(metodo.equals("cotizacion"), "INSCOT al contado con 2 parámetros");
+        interpretar("PAGCUO[\"5\",\"QR\",\"88\"]");
+        check(metodo.equals("cuota"), "PAGCUO dentro del rango 2 a 4 (la regla de QR la valida el negocio)");
+        interpretar("LISUSU");
+        check(metodo.equals("usuario"), "listar sin parámetros");
+        interpretar("REGUSU[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\"][\"extra\"]");
+        check(metodo.equals("error") && evento.getAction() == Token.ERROR_CHARACTER, "texto después del corchete de cierre");
+        interpretar("LISUSU[\"*\"]   ");
+        check(metodo.equals("usuario"), "espacios después del corchete se aceptan");
+
         // --- Scraping: métricas ---
         long[] tiktok = Scraper.leerMetricas("{\"playCount\":2300,\"diggCount\":160,\"commentCount\":21,\"shareCount\":14}");
         check(Arrays.equals(tiktok, new long[]{2300, 160, 21, 14}), "métricas TikTok");

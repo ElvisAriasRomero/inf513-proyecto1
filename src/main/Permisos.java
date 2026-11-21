@@ -5,7 +5,7 @@ import java.util.Set;
 
 /**
  * Qué puede hacer cada rol. El rol sale del email de quien envía el comando.
- *  - Director: todo. Es el único que crea usuarios con rol, los modifica, les asigna rol o los desactiva.
+ *  - Director: todo. Es el único que crea usuarios con rol, los modifica, les asigna rol o los elimina.
  *  - Encargado: todo lo operativo; de usuarios y roles solo puede listar.
  *  - Cliente: ver sus cotizaciones y pagos, aceptarlas o rechazarlas, pagar sus cuotas con QR y subir su material.
  *  - Visitante (correo no registrado): HELP y registrarse solo (queda como Cliente).

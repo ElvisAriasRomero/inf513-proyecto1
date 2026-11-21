@@ -7,7 +7,7 @@ import java.util.List;
 public class DUsuario extends Dato {
 
     public static final String[] HEADERS
-            = {"ID", "ROL", "NOMBRES", "APELLIDOS", "CI/NIT", "EMAIL", "TELEFONO", "USERNAME", "ACTIVO"};
+            = {"ID", "ROL", "NOMBRES", "APELLIDOS", "CI/NIT", "EMAIL", "TELEFONO", "USERNAME"};
 
     public static String guardar(int rolId, String nombres, String apellidos, String ciNit, String email,
             String telefono, String username, String password) throws SQLException {
@@ -35,20 +35,22 @@ public class DUsuario extends Dato {
         return ejecutar("UPDATE usuario SET rol_id=? WHERE id=?", rolId, id);
     }
 
-    /** No se borra: tiene cotizaciones, pagos y revisiones a su nombre. */
-    public static int desactivar(int id) throws SQLException {
-        return ejecutar("UPDATE usuario SET estado=FALSE WHERE id=?", id);
+    /**
+     * Borra al usuario. La base borra en cascada sus cotizaciones (con sus cuotas, material, pautas y métricas);
+     * en lo que solo revisó o creó (pagos verificados, material aprobado, cuentas, páginas) queda sin responsable.
+     */
+    public static int eliminar(int id) throws SQLException {
+        return ejecutar("DELETE FROM usuario WHERE id=?", id);
     }
 
     public static List<String[]> listar() throws SQLException {
-        return consultar("SELECT u.id, r.nombre, u.nombres, u.apellidos, u.ci_nit, u.email, u.telefono, u.username, "
-                + "CASE WHEN u.estado THEN 'Sí' ELSE 'No' END "
+        return consultar("SELECT u.id, r.nombre, u.nombres, u.apellidos, u.ci_nit, u.email, u.telefono, u.username "
                 + "FROM usuario u JOIN rol r ON r.id = u.rol_id ORDER BY u.id");
     }
 
-    /** {id, rol} del usuario activo con ese correo, o null. */
+    /** {id, rol} del usuario con ese correo, o null. */
     public static String[] sesion(String email) throws SQLException {
         return fila("SELECT u.id, r.nombre FROM usuario u JOIN rol r ON r.id = u.rol_id "
-                + "WHERE LOWER(u.email) = LOWER(?) AND u.estado", email);
+                + "WHERE LOWER(u.email) = LOWER(?)", email);
     }
 }

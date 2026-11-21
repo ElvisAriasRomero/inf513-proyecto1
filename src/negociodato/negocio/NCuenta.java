@@ -22,7 +22,7 @@ public class NCuenta {
     }
 
     public void eliminar(List<String> p) throws SQLException {
-        existe(DCuenta.desactivar(entero(p, 0)), "La cuenta no existe");
+        existe(DCuenta.eliminar(entero(p, 0)), "La cuenta no existe");
     }
 
     public List<String[]> listar() throws SQLException {

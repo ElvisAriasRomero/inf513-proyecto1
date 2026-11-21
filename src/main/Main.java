@@ -10,6 +10,7 @@ public class Main {
             System.err.println("Falta la contraseña del grupo. En PowerShell: $env:GRUPO_PASSWORD=\"...\" y vuelva a ejecutar.");
             return;
         }
+        Bitacora.iniciar();
         new Aplication().start();
     }
 }

@@ -19,7 +19,7 @@ public class NServicio {
     }
 
     public void eliminar(List<String> p) throws SQLException {
-        existe(DServicio.desactivar(entero(p, 0)), "El servicio no existe");
+        existe(DServicio.eliminar(entero(p, 0)), "El servicio no existe");
     }
 
     public List<String[]> listar() throws SQLException {

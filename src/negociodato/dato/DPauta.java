@@ -11,12 +11,12 @@ public class DPauta extends Dato {
     public static final String[] HEADERS
             = {"ID", "MATERIAL", "RED", "CUENTA", "TIPO", "INICIO", "FIN", "URL", "ESTADO"};
 
-    /** Solo con material aprobado y cuenta activa. Devuelve el id o null. */
+    /** Solo con material aprobado y una cuenta que exista. Devuelve el id o null. */
     public static String guardar(int materialId, int cuentaId, String tipo, LocalDateTime inicio, LocalDateTime fin)
             throws SQLException {
         return valor("INSERT INTO pauta(material_id, cuenta_red_social_id, tipo, fecha_hora_inicio, fecha_hora_fin) "
                 + "SELECT m.id, c.id, ?, ?, ? FROM material_publicitario m, cuenta_red_social c "
-                + "WHERE m.id = ? AND m.estado = 'aprobado' AND c.id = ? AND c.estado RETURNING id",
+                + "WHERE m.id = ? AND m.estado = 'aprobado' AND c.id = ? RETURNING id",
                 tipo, inicio, fin, materialId, cuentaId);
     }
 

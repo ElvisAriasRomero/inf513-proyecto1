@@ -31,7 +31,7 @@ public class NPauta {
                     + " (" + choque[1] + ") de " + choque[2] + " a " + choque[3]);
         }
         return existe(DPauta.guardar(material, cuenta, tipo, inicio, fin),
-                "El material debe estar aprobado y la cuenta debe existir y estar activa");
+                "El material debe estar aprobado y la cuenta debe existir");
     }
 
     /** [id; enlace_de_la_publicacion] - el scraping de métricas entra a este enlace. */

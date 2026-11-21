@@ -33,6 +33,16 @@ public class Interpreter implements Runnable {
             token_event.addParams(analex.getParam(token_command.getParams(i)));
         }
 
+        // Cantidad exacta de parámetros: si faltan o sobran, se responde el error sin ejecutar nada
+        int[] rango = Token.parametros(token_command.getName(), token_command.getAction());
+        int n = token_command.countParams();
+        if (rango != null && (n < rango[0] || n > rango[1])) {
+            String esperado = rango[0] == rango[1] ? String.valueOf(rango[0]) : rango[0] + " a " + rango[1];
+            tokenError(new Token(Token.ERROR, Token.ERROR_PARAMS), Token.codigo(token_command.getName(),
+                    token_command.getAction()) + " espera " + esperado + " parámetro(s) y recibió " + n);
+            return;
+        }
+
         switch (token_command.getName()) {
             case Token.HELP:
                 listener.help(token_event);

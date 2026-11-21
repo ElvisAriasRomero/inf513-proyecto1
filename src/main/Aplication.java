@@ -14,8 +14,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import negociodato.dato.*;
 import negociodato.negocio.*;
 import negociodato.utils.Constantes;
@@ -65,6 +63,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
     @Override
     public void onReceiveEmailEvent(List<Email> emails) {
         for (Email email : emails) {
+            Bitacora.acceso(email.getFrom() + " | RECIBIDO | asunto: " + email.getSubject());
             Interpreter interpreter = new Interpreter(email.getSubject() + " ", email.getFrom());
             interpreter.setListener(this);
             iniciar(interpreter, "Interpreter Thread");
@@ -134,7 +133,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                     return ok("Rol asignado. El usuario ya puede usar los comandos de su nuevo rol.");
                 case Token.ELIMINAR:
                     nUsuario.eliminar(s, p);
-                    return ok("Usuario desactivado");
+                    return ok("Usuario eliminado, junto con sus cotizaciones, cuotas, material y pautas.");
                 case Token.LISTAR:
                     return HtmlBuilder.tabla("Usuarios", DUsuario.HEADERS, nUsuario.listar());
                 default:
@@ -155,7 +154,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                     return ok("Cuenta modificada");
                 case Token.ELIMINAR:
                     nCuenta.eliminar(p);
-                    return ok("Cuenta desactivada");
+                    return ok("Cuenta eliminada, junto con sus pautas y métricas.");
                 case Token.LISTAR:
                     return HtmlBuilder.tabla("Cuentas de redes sociales", DCuenta.HEADERS, nCuenta.listar());
                 default:
@@ -176,9 +175,9 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                     return ok("Servicio modificado");
                 case Token.ELIMINAR:
                     nServicio.eliminar(p);
-                    return ok("Servicio desactivado");
+                    return ok("Servicio eliminado y quitado de las cotizaciones que lo tenían.");
                 case Token.LISTAR:
-                    return HtmlBuilder.tabla("Oferta comercial", DServicio.HEADERS, nServicio.listar());
+                    return HtmlBuilder.tabla("Servicios", DServicio.HEADERS, nServicio.listar());
                 default:
                     return accionNoValida();
             }
@@ -384,44 +383,70 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
 
     @Override
     public void error(TokenEvent e) {
-        List<String> p = e.getParams();
-        String motivo = e.getAction() == Token.ERROR_CHARACTER
-                ? "El carácter \"" + p.get(1) + "\" no está permitido."
-                : "No se reconoce \"" + p.get(1) + "\" como un comando válido.";
-        enviar(e.getSender(), HtmlBuilder.texto("Comando desconocido",
-                "No se pudo ejecutar [" + p.get(0) + "]", motivo, "Envíe HELP para ver la lista de comandos."));
+        List<String> p = e.getParams(); // {asunto, detalle}
+        String motivo;
+        switch (e.getAction()) {
+            case Token.ERROR_CHARACTER:
+                motivo = "Sintaxis inválida: el carácter \"" + p.get(1) + "\" no está permitido ahí. "
+                        + "Use el formato CODIGO[\"param1\",\"param2\"] y nada después del corchete de cierre.";
+                break;
+            case Token.ERROR_PARAMS:
+                motivo = "Cantidad de parámetros incorrecta: " + p.get(1) + ".";
+                break;
+            default:
+                motivo = "Comando desconocido: no se reconoce \"" + p.get(1) + "\" como un comando válido.";
+        }
+        Bitacora.acceso(e.getSender() + " | " + p.get(0) + " | ERROR | " + motivo);
+        Bitacora.error(e.getSender() + " | " + p.get(0) + " | " + motivo, null);
+        enviar(e.getSender(), HtmlBuilder.texto("Error", "Error: " + motivo,
+                "Comando recibido: " + p.get(0), "Envíe HELP para ver la lista de comandos."));
     }
 
     // ===================== RESPUESTAS =====================
 
-    /** Revisa permisos, ejecuta y traduce cualquier error a un mensaje claro para el correo. */
+    /**
+     * Revisa permisos, ejecuta y traduce cualquier error a un mensaje claro para el correo:
+     * "Éxito" con el resultado, o "Error: [descripción del fallo]". Todo queda en logs/access.log y logs/error.log.
+     */
     private void responder(TokenEvent e, int cu, Accion accion) {
-        String html;
+        String comando = Token.codigo(cu, e.getAction()) + e.getParams();
+        String html = null;
+        String error = null;
+        Throwable causa = null;   // solo para fallos inesperados, que van con su traza a error.log
         try {
             Sesion s = Sesion.de(e.getSender());
             if (!Permisos.permitido(s.rol, cu, e.getAction())) {
-                html = HtmlBuilder.texto("Acceso denegado", s.rol == null
+                error = "Acceso denegado. " + (s.rol == null
                         ? "Su correo " + e.getSender() + " no está registrado en el sistema."
                         : "Su rol (" + s.rol + ") no tiene permiso para esta acción.");
             } else {
                 html = accion.ejecutar(s);
             }
         } catch (SQLException ex) {
-            html = HtmlBuilder.texto("Error en la base de datos", mensajeSql(ex));
+            error = mensajeSql(ex);
+            causa = ex;
         } catch (NumberFormatException ex) {
-            html = HtmlBuilder.texto("Error en el tipo de parámetro", "Uno de los parámetros debía ser un número.");
+            error = "Tipo de dato incorrecto: uno de los parámetros debía ser un número.";
         } catch (IndexOutOfBoundsException ex) {
-            html = HtmlBuilder.texto("Cantidad de parámetros incorrecta",
-                    "Faltan parámetros para esta acción. Envíe HELP para ver el formato.");
+            error = "Faltan parámetros para esta acción. Envíe HELP para ver el formato.";
         } catch (DateTimeParseException ex) {
-            html = HtmlBuilder.texto("Fecha con formato incorrecto", "Use AAAA-MM-DD HH:MM, por ejemplo 2026-10-15 18:00");
+            error = "Fecha con formato incorrecto. Use AAAA-MM-DD HH:MM, por ejemplo 2026-10-15 18:00";
         } catch (IllegalArgumentException ex) {
-            html = HtmlBuilder.texto("No se pudo realizar la acción", ex.getMessage());
+            error = ex.getMessage();
         } catch (IOException ex) {
-            html = HtmlBuilder.texto("No se pudo contactar al servicio externo", ex.getMessage());
+            error = "No se pudo contactar al servicio externo: " + ex.getMessage();
+            causa = ex;
         } catch (Exception ex) {
-            Logger.getLogger(Aplication.class.getName()).log(Level.SEVERE, null, ex);
-            html = HtmlBuilder.texto("Error inesperado", "Intente nuevamente más tarde.");
+            error = "Error inesperado. Intente nuevamente más tarde.";
+            causa = ex;
+        }
+
+        if (error != null) {
+            html = HtmlBuilder.texto("Error", "Error: " + error);
+            Bitacora.acceso(e.getSender() + " | " + comando + " | ERROR | " + error);
+            Bitacora.error(e.getSender() + " | " + comando + " | " + error, causa);
+        } else {
+            Bitacora.acceso(e.getSender() + " | " + comando + " | ÉXITO");
         }
         if (html != null) {
             enviar(e.getSender(), html);
@@ -450,7 +475,7 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
     }
 
     private static String ok(String mensaje) {
-        return HtmlBuilder.texto("Petición realizada correctamente", mensaje);
+        return HtmlBuilder.texto("Éxito", "Éxito: " + mensaje);
     }
 
     private static String accionNoValida() {

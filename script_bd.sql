@@ -28,20 +28,18 @@ CREATE TABLE usuario (
   telefono       VARCHAR(20),
   username       VARCHAR(40) NOT NULL UNIQUE,
   password       VARCHAR(255) NOT NULL,          -- SHA-256
-  estado         BOOLEAN NOT NULL DEFAULT TRUE,
   fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- ===================== CU2 =====================
 CREATE TABLE cuenta_red_social (
   id            SERIAL PRIMARY KEY,
-  usuario_id    INT NOT NULL REFERENCES usuario(id),
+  usuario_id    INT REFERENCES usuario(id) ON DELETE SET NULL,   -- quién la registró
   red_social    VARCHAR(20) NOT NULL
                 CHECK (red_social IN ('Facebook','Instagram','TikTok','YouTube')),
   nombre_cuenta VARCHAR(100) NOT NULL,
   url           VARCHAR(255) NOT NULL UNIQUE,
-  token_acceso  TEXT,
-  estado        BOOLEAN NOT NULL DEFAULT TRUE
+  token_acceso  TEXT
 );
 
 -- ===================== CU3 =====================
@@ -49,14 +47,13 @@ CREATE TABLE servicio (
   id          SERIAL PRIMARY KEY,
   nombre      VARCHAR(80) NOT NULL,
   descripcion TEXT,
-  precio      NUMERIC(10,3) NOT NULL CHECK (precio >= 0),
-  estado      BOOLEAN NOT NULL DEFAULT TRUE
+  precio      NUMERIC(10,3) NOT NULL CHECK (precio >= 0)
 );
 
 CREATE TABLE cotizacion (
   id         SERIAL PRIMARY KEY,
-  cliente_id INT NOT NULL REFERENCES usuario(id),
-  usuario_id INT NOT NULL REFERENCES usuario(id),
+  cliente_id INT NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+  usuario_id INT REFERENCES usuario(id) ON DELETE SET NULL,   -- quién la creó
   fecha      DATE NOT NULL DEFAULT CURRENT_DATE,
   total      NUMERIC(10,3) NOT NULL DEFAULT 0,
   tipo_pago  VARCHAR(10) NOT NULL DEFAULT 'contado'
@@ -70,7 +67,7 @@ CREATE TABLE cotizacion (
 CREATE TABLE detalle_cotizacion (
   id              SERIAL PRIMARY KEY,
   cotizacion_id   INT NOT NULL REFERENCES cotizacion(id) ON DELETE CASCADE,
-  servicio_id     INT NOT NULL REFERENCES servicio(id),
+  servicio_id     INT NOT NULL REFERENCES servicio(id) ON DELETE CASCADE,
   cantidad        INT NOT NULL CHECK (cantidad > 0),
   precio_unitario NUMERIC(10,3) NOT NULL,
   subtotal        NUMERIC(10,3) NOT NULL
@@ -88,7 +85,7 @@ CREATE TABLE cuota (
   comprobante       VARCHAR(255),
   estado            VARCHAR(10) NOT NULL DEFAULT 'pendiente'
                     CHECK (estado IN ('pendiente','pagada','vencida')),
-  verificado_por    INT REFERENCES usuario(id),
+  verificado_por    INT REFERENCES usuario(id) ON DELETE SET NULL,
   UNIQUE (cotizacion_id, nro_cuota),
   CHECK (estado <> 'pagada' OR (metodo IS NOT NULL AND fecha_pago IS NOT NULL)),
   CHECK (metodo <> 'QR' OR estado <> 'pagada' OR comprobante IS NOT NULL)
@@ -97,13 +94,13 @@ CREATE TABLE cuota (
 -- ===================== CU4 =====================
 CREATE TABLE material_publicitario (
   id            SERIAL PRIMARY KEY,
-  cotizacion_id INT NOT NULL REFERENCES cotizacion(id),
+  cotizacion_id INT NOT NULL REFERENCES cotizacion(id) ON DELETE CASCADE,
   titulo        VARCHAR(120) NOT NULL,
   archivo       VARCHAR(500) NOT NULL,           -- enlace (Drive, Dropbox, etc.)
   tipo          VARCHAR(10) NOT NULL CHECK (tipo IN ('imagen','video')),
   estado        VARCHAR(10) NOT NULL DEFAULT 'pendiente'
                 CHECK (estado IN ('pendiente','aprobado','rechazado')),
-  validado_por  INT REFERENCES usuario(id),
+  validado_por  INT REFERENCES usuario(id) ON DELETE SET NULL,
   observacion   TEXT,
   fecha_carga   TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -111,8 +108,8 @@ CREATE TABLE material_publicitario (
 -- ===================== CU5 =====================
 CREATE TABLE pauta (
   id                   SERIAL PRIMARY KEY,
-  material_id          INT NOT NULL REFERENCES material_publicitario(id),
-  cuenta_red_social_id INT NOT NULL REFERENCES cuenta_red_social(id),
+  material_id          INT NOT NULL REFERENCES material_publicitario(id) ON DELETE CASCADE,
+  cuenta_red_social_id INT NOT NULL REFERENCES cuenta_red_social(id) ON DELETE CASCADE,
   tipo                 VARCHAR(10) NOT NULL
                        CHECK (tipo IN ('post','historia','reel','en_vivo')),
   fecha_hora_inicio    TIMESTAMPTZ NOT NULL,
@@ -139,9 +136,8 @@ CREATE TABLE pagina_detectada (
   seguidores      INT NOT NULL DEFAULT 0,
   estado          VARCHAR(12) NOT NULL DEFAULT 'detectada'
                   CHECK (estado IN ('detectada','denunciada','descartada')),
-  revisado_por    INT REFERENCES usuario(id),
-  fecha_deteccion TIMESTAMP NOT NULL DEFAULT NOW(),
-  CHECK (estado = 'detectada' OR revisado_por IS NOT NULL)
+  revisado_por    INT REFERENCES usuario(id) ON DELETE SET NULL,
+  fecha_deteccion TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- ===================== CU7 =====================
@@ -203,10 +199,10 @@ INSERT INTO comando (caso_uso, accion, parametro, ejemplo, roles) VALUES
 ('CU2 Cuentas', 'MODCUE', 'MODCUE["id","Facebook | Instagram | TikTok | YouTube","nombre_cuenta","url","token o -"]', 'MODCUE["1","Facebook","UAGRM","https://facebook.com/uagrm","-"]', 'Director, Encargado'),
 ('CU2 Cuentas', 'ELICUE', 'ELICUE["id"]', 'ELICUE["1"]', 'Director, Encargado'),
 ('CU2 Cuentas', 'LISCUE', 'LISCUE["*"]', 'LISCUE["*"]', 'Director, Encargado'),
-('CU3 Oferta', 'INSSER', 'INSSER["nombre","descripcion","precio"]', 'INSSER["Reel","Video corto","200"]', 'Director, Encargado'),
-('CU3 Oferta', 'MODSER', 'MODSER["id","nombre","descripcion","precio"]', 'MODSER["3","Reel","Video de 30 s","250"]', 'Director, Encargado'),
-('CU3 Oferta', 'ELISER', 'ELISER["id"]', 'ELISER["3"]', 'Director, Encargado'),
-('CU3 Oferta', 'LISSER', 'LISSER["*"]', 'LISSER["*"]', 'Todos los registrados'),
+('CU3 Servicios', 'INSSER', 'INSSER["nombre","descripcion","precio"]', 'INSSER["Reel","Video corto","200"]', 'Director, Encargado'),
+('CU3 Servicios', 'MODSER', 'MODSER["id","nombre","descripcion","precio"]', 'MODSER["3","Reel","Video de 30 s","250"]', 'Director, Encargado'),
+('CU3 Servicios', 'ELISER', 'ELISER["id"]', 'ELISER["3"]', 'Director, Encargado'),
+('CU3 Servicios', 'LISSER', 'LISSER["*"]', 'LISSER["*"]', 'Todos los registrados'),
 ('CU3 Cotización', 'INSCOT', 'INSCOT["cliente_id","contado | cuotas","nro_cuotas"]', 'INSCOT["2","cuotas","3"]', 'Director, Encargado'),
 ('CU3 Cotización', 'MODCOT', 'MODCOT["id","contado | cuotas","nro_cuotas"]', 'MODCOT["1","contado"]', 'Director, Encargado'),
 ('CU3 Cotización', 'ELICOT', 'ELICOT["id"]', 'ELICOT["1"]', 'Director, Encargado'),

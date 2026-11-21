@@ -63,63 +63,86 @@ public class Token {
 
     public static final int ERROR_COMMAND = 300;
     public static final int ERROR_CHARACTER = 301;
+    public static final int ERROR_PARAMS = 302;
 
-    /** Código del asunto → {caso de uso, acción}. */
+    /** Código del asunto → {caso de uso, acción, mínimo de parámetros, máximo de parámetros}. */
     private static final Map<String, int[]> COMANDOS = new HashMap<>();
     private static final Map<Integer, String> NOMBRES = new HashMap<>();
+    /** (caso de uso, acción) → {mínimo, máximo} de parámetros. */
+    private static final Map<Integer, int[]> PARAMETROS = new HashMap<>();
 
     static {
-        comando("HELP", HELP, 0);
+        // Cantidad exacta de parámetros de cada comando: (código, CU, acción, mínimo, máximo).
+        // ["*"] cuenta como 1 parámetro; los listados aceptan también no escribir nada.
+        comando("HELP", HELP, 0, 0, 1);
 
-        crud(ROL, "ROL");
-        crud(USUARIO, "USU");
-        comando("REGUSU", USUARIO, REGISTRAR); // auto-registro como Cliente
-        comando("ASIUSU", USUARIO, ASIGNAR);   // asignar rol
-        crud(CUENTA, "CUE");
-        crud(SERVICIO, "SER");
+        comando("INSROL", ROL, AGREGAR, 1, 1);
+        comando("MODROL", ROL, MODIFICAR, 2, 2);
+        comando("ELIROL", ROL, ELIMINAR, 1, 1);
+        comando("LISROL", ROL, LISTAR, 0, 1);
 
-        crud(COTIZACION, "COT");
-        comando("VERCOT", COTIZACION, VER);
-        comando("APRCOT", COTIZACION, APROBAR);
-        comando("RECCOT", COTIZACION, RECHAZAR);
+        comando("INSUSU", USUARIO, AGREGAR, 8, 8);
+        comando("MODUSU", USUARIO, MODIFICAR, 7, 7);
+        comando("ELIUSU", USUARIO, ELIMINAR, 1, 1);
+        comando("LISUSU", USUARIO, LISTAR, 0, 1);
+        comando("REGUSU", USUARIO, REGISTRAR, 6, 6); // auto-registro como Cliente
+        comando("ASIUSU", USUARIO, ASIGNAR, 2, 2);   // asignar rol
 
-        comando("INSDET", DETALLE, AGREGAR);
-        comando("ELIDET", DETALLE, ELIMINAR);
-        comando("LISDET", DETALLE, LISTAR);
+        comando("INSCUE", CUENTA, AGREGAR, 3, 4);     // el token es opcional
+        comando("MODCUE", CUENTA, MODIFICAR, 4, 5);
+        comando("ELICUE", CUENTA, ELIMINAR, 1, 1);
+        comando("LISCUE", CUENTA, LISTAR, 0, 1);
 
-        comando("LISCUO", CUOTA, LISTAR);
-        comando("PAGCUO", CUOTA, PAGAR);
-        comando("QRPCUO", CUOTA, QR);
-        comando("VERCUO", CUOTA, VER);       // "ya pagué": consulta el QR en PagoFácil
-        comando("VENCUO", CUOTA, VENCIDAS);
+        comando("INSSER", SERVICIO, AGREGAR, 3, 3);
+        comando("MODSER", SERVICIO, MODIFICAR, 4, 4);
+        comando("ELISER", SERVICIO, ELIMINAR, 1, 1);
+        comando("LISSER", SERVICIO, LISTAR, 0, 1);
 
-        comando("INSMAT", MATERIAL, AGREGAR);
-        comando("LISMAT", MATERIAL, LISTAR);
-        comando("APRMAT", MATERIAL, APROBAR);
-        comando("RECMAT", MATERIAL, RECHAZAR);
+        comando("INSCOT", COTIZACION, AGREGAR, 2, 3);   // al contado no lleva nro_cuotas
+        comando("MODCOT", COTIZACION, MODIFICAR, 2, 3);
+        comando("ELICOT", COTIZACION, ELIMINAR, 1, 1);
+        comando("LISCOT", COTIZACION, LISTAR, 0, 1);
+        comando("VERCOT", COTIZACION, VER, 1, 1);
+        comando("APRCOT", COTIZACION, APROBAR, 1, 1);
+        comando("RECCOT", COTIZACION, RECHAZAR, 1, 1);
 
-        comando("INSPAU", PAUTA, AGREGAR);
-        comando("PUBPAU", PAUTA, PUBLICAR);
-        comando("CANPAU", PAUTA, CANCELAR);
-        comando("LISPAU", PAUTA, LISTAR);
+        comando("INSDET", DETALLE, AGREGAR, 3, 3);
+        comando("ELIDET", DETALLE, ELIMINAR, 1, 1);
+        comando("LISDET", DETALLE, LISTAR, 1, 1);
 
-        comando("ESCPAG", PAGINA, ESCANEAR);
-        comando("INSPAG", PAGINA, AGREGAR);
-        comando("DENPAG", PAGINA, DENUNCIAR);
-        comando("DESPAG", PAGINA, DESCARTAR);
-        comando("LISPAG", PAGINA, LISTAR);
+        comando("LISCUO", CUOTA, LISTAR, 1, 1);
+        comando("PAGCUO", CUOTA, PAGAR, 2, 4);        // efectivo: 2; QR a mano: 4
+        comando("QRPCUO", CUOTA, QR, 1, 1);
+        comando("VERCUO", CUOTA, VER, 1, 1);          // "ya pagué": consulta el QR en PagoFácil
+        comando("VENCUO", CUOTA, VENCIDAS, 0, 1);
 
-        comando("CAPMET", METRICA, CAPTURAR);
-        comando("INSMET", METRICA, AGREGAR);
-        comando("LISMET", METRICA, LISTAR);
+        comando("INSMAT", MATERIAL, AGREGAR, 4, 4);
+        comando("LISMAT", MATERIAL, LISTAR, 0, 1);
+        comando("APRMAT", MATERIAL, APROBAR, 1, 2);   // observación opcional
+        comando("RECMAT", MATERIAL, RECHAZAR, 2, 2);
 
-        comando("REPRED", REPORTE, REDES);
-        comando("REPGRA", REPORTE, GRAFICA);
-        comando("REPTIP", REPORTE, TIPOS);
-        comando("REPMEN", REPORTE, MENSUAL);
-        comando("REPPAG", REPORTE, PAGINAS);
-        comando("REPCOB", REPORTE, COBRANZA);
-        comando("REPCOT", REPORTE, COTIZACIONES);
+        comando("INSPAU", PAUTA, AGREGAR, 4, 5);      // en vivo lleva hora de fin
+        comando("PUBPAU", PAUTA, PUBLICAR, 2, 2);
+        comando("CANPAU", PAUTA, CANCELAR, 1, 1);
+        comando("LISPAU", PAUTA, LISTAR, 0, 1);
+
+        comando("ESCPAG", PAGINA, ESCANEAR, 0, 1);
+        comando("INSPAG", PAGINA, AGREGAR, 4, 5);     // seguidores opcional
+        comando("DENPAG", PAGINA, DENUNCIAR, 1, 1);
+        comando("DESPAG", PAGINA, DESCARTAR, 1, 1);
+        comando("LISPAG", PAGINA, LISTAR, 0, 1);
+
+        comando("CAPMET", METRICA, CAPTURAR, 0, 1);
+        comando("INSMET", METRICA, AGREGAR, 5, 5);
+        comando("LISMET", METRICA, LISTAR, 1, 1);
+
+        comando("REPRED", REPORTE, REDES, 0, 1);
+        comando("REPGRA", REPORTE, GRAFICA, 0, 1);
+        comando("REPTIP", REPORTE, TIPOS, 0, 1);
+        comando("REPMEN", REPORTE, MENSUAL, 0, 1);
+        comando("REPPAG", REPORTE, PAGINAS, 0, 1);
+        comando("REPCOB", REPORTE, COBRANZA, 0, 1);
+        comando("REPCOT", REPORTE, COTIZACIONES, 0, 1);
 
         NOMBRES.put(CU, "caso de uso");
         NOMBRES.put(ACTION, "action");
@@ -128,18 +151,23 @@ public class Token {
         NOMBRES.put(ERROR, "error");
         NOMBRES.put(ERROR_COMMAND, "UNKNOWN COMMAND");
         NOMBRES.put(ERROR_CHARACTER, "UNKNOWN CHARACTER");
+        NOMBRES.put(ERROR_PARAMS, "WRONG PARAMS");
     }
 
-    private static void crud(int cu, String tabla) {
-        comando("INS" + tabla, cu, AGREGAR);
-        comando("MOD" + tabla, cu, MODIFICAR);
-        comando("ELI" + tabla, cu, ELIMINAR);
-        comando("LIS" + tabla, cu, LISTAR);
-    }
-
-    private static void comando(String codigo, int cu, int accion) {
+    private static void comando(String codigo, int cu, int accion, int minimo, int maximo) {
         COMANDOS.put(codigo, new int[]{cu, accion});
         NOMBRES.put(cu * 1000 + accion, codigo);
+        PARAMETROS.put(cu * 1000 + accion, new int[]{minimo, maximo});
+    }
+
+    /** Código del comando (LISUSU, INSCOT...) a partir del caso de uso y la acción. */
+    public static String codigo(int cu, int accion) {
+        return NOMBRES.getOrDefault(cu * 1000 + accion, "?");
+    }
+
+    /** {mínimo, máximo} de parámetros que acepta el comando, o null si no está definido. */
+    public static int[] parametros(int cu, int accion) {
+        return PARAMETROS.get(cu * 1000 + accion);
     }
 
     /** Tokens del código (caso de uso y acción), o null si el código no existe. */

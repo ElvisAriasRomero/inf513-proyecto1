@@ -22,6 +22,7 @@ public class Consola extends Aplication {
     private int numero = 0;
 
     public static void main(String[] args) throws IOException {
+        Bitacora.iniciar();
         new Consola().ejecutar(args.length > 0 ? args[0] : "director@gmail.com");
     }
 
@@ -55,6 +56,7 @@ public class Consola extends Aplication {
                 remitente = linea.substring(5).trim();
                 continue;
             }
+            Bitacora.acceso(remitente + " | RECIBIDO (consola) | asunto: " + linea);
             Interpreter interpreter = new Interpreter(linea + " ", remitente);
             interpreter.setListener(this);
             interpreter.run(); // en el mismo hilo, para que la respuesta salga antes del siguiente comando

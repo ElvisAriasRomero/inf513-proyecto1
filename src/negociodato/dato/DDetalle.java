@@ -8,11 +8,11 @@ public class DDetalle extends Dato {
 
     public static final String[] HEADERS = {"ID", "SERVICIO", "CANTIDAD", "PRECIO (Bs)", "SUBTOTAL (Bs)"};
 
-    /** Toma el precio actual del servicio. Solo si la cotización sigue pendiente y el servicio está activo. */
+    /** Toma el precio actual del servicio. Solo si la cotización sigue pendiente. */
     public static int agregar(int cotizacionId, int servicioId, int cantidad) throws SQLException {
         return ejecutar("INSERT INTO detalle_cotizacion(cotizacion_id, servicio_id, cantidad, precio_unitario, subtotal) "
                 + "SELECT c.id, s.id, ?, s.precio, s.precio * ? FROM cotizacion c, servicio s "
-                + "WHERE c.id = ? AND c.estado = 'pendiente' AND s.id = ? AND s.estado",
+                + "WHERE c.id = ? AND c.estado = 'pendiente' AND s.id = ?",
                 cantidad, cantidad, cotizacionId, servicioId);
     }
 
