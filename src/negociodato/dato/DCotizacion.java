@@ -21,11 +21,6 @@ public class DCotizacion extends Dato {
                 usuarioId, tipoPago, nroCuotas, clienteId);
     }
 
-    public static int modificar(int id, String tipoPago, int nroCuotas) throws SQLException {
-        return ejecutar("UPDATE cotizacion SET tipo_pago=?, nro_cuotas=? WHERE id=? AND estado='pendiente'",
-                tipoPago, nroCuotas, id);
-    }
-
     /** Pendiente o aprobada, sin cuotas pagadas ni QR generado (un pago podría estar en camino). */
     public static int eliminar(int id) throws SQLException {
         return ejecutar("DELETE FROM cotizacion c WHERE c.id=? AND c.estado IN ('pendiente','aprobada') "
@@ -69,10 +64,6 @@ public class DCotizacion extends Dato {
                 + "       ELSE c.total - ROUND(c.total / c.nro_cuotas, 3) * (c.nro_cuotas - 1) END, "
                 + "  (CURRENT_DATE + (g - 1) * INTERVAL '1 month')::date "
                 + "FROM c, generate_series(1, c.nro_cuotas) g", id);
-    }
-
-    public static int rechazar(int id) throws SQLException {
-        return ejecutar("UPDATE cotizacion SET estado='rechazada' WHERE id=? AND estado='pendiente'", id);
     }
 
     public static void recalcularTotal(int id) throws SQLException {

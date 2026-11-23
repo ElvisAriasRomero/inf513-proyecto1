@@ -190,11 +190,11 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
         responder(e, Token.COTIZACION, s -> {
             switch (e.getAction()) {
                 case Token.AGREGAR:
-                    String id = nCotizacion.guardar(s, p);
-                    return ok("Cotización " + id + " creada. Agregue servicios con: INSDET[\"" + id + "\",\"servicio_id\",\"cantidad\"]");
-                case Token.MODIFICAR:
-                    nCotizacion.modificar(p);
-                    return ok("Cotización modificada");
+                    String[] nueva = nCotizacion.guardar(s, p); // {id, total, primera cuota}
+                    return ok("Cotización " + nueva[0] + " creada y aprobada por " + nueva[1] + " Bs. "
+                            + "Vea sus cuotas con LISCUO[\"" + nueva[0] + "\"] y cobre la primera en efectivo con PAGCUO[\""
+                            + nueva[2] + "\",\"efectivo\"] o con QR con QRPCUO[\"" + nueva[2] + "\"]. "
+                            + "Si hay un error, bórrela con ELICOT[\"" + nueva[0] + "\"] y cree otra.");
                 case Token.ELIMINAR:
                     nCotizacion.eliminar(p);
                     return ok("Cotización eliminada");
@@ -206,12 +206,6 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                             HtmlBuilder.seccion("Cotización " + cot, DCotizacion.HEADERS, Collections.singletonList(nCotizacion.ver(s, cot))),
                             HtmlBuilder.seccion("Servicios", DDetalle.HEADERS, nDetalle.listar(s, cot)),
                             HtmlBuilder.seccion("Cuotas", DCuota.HEADERS, nCuota.listar(s, cot)));
-                case Token.APROBAR:
-                    return ok("Cotización aprobada. Se generaron " + nCotizacion.aprobar(s, p) + " cuota(s). "
-                            + "Véalas con: LISCUO[\"" + p.get(0).trim() + "\"]");
-                case Token.RECHAZAR:
-                    nCotizacion.rechazar(s, p);
-                    return ok("Cotización rechazada");
                 case Token.SOLICITAR:
                     String[] sol = nCotizacion.solicitar(s, p); // {id, total, cuota_id}
                     return ok("Cotización " + sol[0] + " creada: " + sol[1] + " Bs, pago único solo con QR. "
@@ -229,12 +223,6 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
         List<String> p = e.getParams();
         responder(e, Token.DETALLE, s -> {
             switch (e.getAction()) {
-                case Token.AGREGAR:
-                    nDetalle.agregar(p);
-                    return ok("Servicio agregado a la cotización. Total actualizado.");
-                case Token.ELIMINAR:
-                    nDetalle.eliminar(p);
-                    return ok("Servicio quitado de la cotización. Total actualizado.");
                 case Token.LISTAR:
                     return HtmlBuilder.tabla("Servicios de la cotización", DDetalle.HEADERS,
                             nDetalle.listar(s, Params.entero(p, 0)));
@@ -280,6 +268,10 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                                 + ", ya pagada. Revíselo en " + p.get(2) + " y apruébelo con APRMAT[\"" + mat
                                 + "\"] o rechácelo con RECMAT[\"" + mat + "\",\"motivo\"]. "
                                 + "Luego programe la publicación con INSPAU.");
+                    }
+                    if (!s.esCliente()) {
+                        return ok("Material " + mat + " registrado y aprobado. Programe su publicación con INSPAU[\""
+                                + mat + "\",\"cuenta_id\",\"post | historia | reel | en_vivo\",\"AAAA-MM-DD HH:MM\"].");
                     }
                     return ok("Material " + mat + " recibido. Queda pendiente de revisión: "
                             + "el Director lo revisará y programará la fecha y hora de la publicación.");

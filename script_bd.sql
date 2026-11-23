@@ -60,7 +60,7 @@ CREATE TABLE cotizacion (
              CHECK (tipo_pago IN ('contado','cuotas')),
   nro_cuotas INT NOT NULL DEFAULT 1 CHECK (nro_cuotas >= 1),
   estado     VARCHAR(15) NOT NULL DEFAULT 'pendiente'
-             CHECK (estado IN ('pendiente','aprobada','pagada','rechazada')),
+             CHECK (estado IN ('pendiente','aprobada','pagada')),   -- pendiente solo mientras se cargan sus servicios
   CHECK (tipo_pago = 'cuotas' OR nro_cuotas = 1)
 );
 
@@ -203,16 +203,11 @@ INSERT INTO comando (caso_uso, accion, parametro, ejemplo, roles) VALUES
 ('CU3 Servicios', 'MODSER', 'MODSER["id","nombre","descripcion","precio"]', 'MODSER["3","Reel","Video de 30 s","250"]', 'Director, Encargado'),
 ('CU3 Servicios', 'ELISER', 'ELISER["id"]', 'ELISER["3"]', 'Director, Encargado'),
 ('CU3 Servicios', 'LISSER', 'LISSER["*"]', 'LISSER["*"]', 'Todos los registrados'),
-('CU3 Cotización', 'INSCOT', 'INSCOT["cliente_id","contado | cuotas","nro_cuotas"]', 'INSCOT["2","cuotas","3"]', 'Director, Encargado'),
-('CU3 Cotización', 'MODCOT', 'MODCOT["id","contado | cuotas","nro_cuotas"]', 'MODCOT["1","contado"]', 'Director, Encargado'),
+('CU3 Cotización', 'INSCOT', 'INSCOT["cliente_id","contado | cuotas","nro_cuotas (solo cuotas)","servicio_id","cantidad", ...más pares]', 'INSCOT["5","cuotas","2","1","2","3","1"]', 'Director, Encargado'),
 ('CU3 Cotización', 'ELICOT', 'ELICOT["id"]', 'ELICOT["1"]', 'Director, Encargado'),
 ('CU3 Cotización', 'LISCOT', 'LISCOT["*"]', 'LISCOT["*"]', 'Todos (el cliente ve las suyas)'),
 ('CU3 Cotización', 'VERCOT', 'VERCOT["id"]', 'VERCOT["1"]', 'Todos (el cliente ve las suyas)'),
-('CU3 Cotización', 'APRCOT', 'APRCOT["id"]', 'APRCOT["1"]', 'Director, Encargado'),
-('CU3 Cotización', 'RECCOT', 'RECCOT["id"]', 'RECCOT["1"]', 'Director, Encargado'),
 ('CU3 Cotización', 'SOLCOT', 'SOLCOT["servicio_id","cantidad"]', 'SOLCOT["1","2"]', 'Cliente (queda aprobada, pago único solo con QR)'),
-('CU3 Cotización', 'INSDET', 'INSDET["cotizacion_id","servicio_id","cantidad"]', 'INSDET["1","3","2"]', 'Director, Encargado'),
-('CU3 Cotización', 'ELIDET', 'ELIDET["id_detalle"]', 'ELIDET["4"]', 'Director, Encargado'),
 ('CU3 Cotización', 'LISDET', 'LISDET["cotizacion_id"]', 'LISDET["1"]', 'Todos (el cliente las suyas)'),
 ('CU3 Pagos', 'LISCUO', 'LISCUO["cotizacion_id"]', 'LISCUO["1"]', 'Todos (el cliente las suyas)'),
 ('CU3 Pagos', 'PAGCUO (efectivo)', 'PAGCUO["cuota_id","efectivo"]', 'PAGCUO["5","efectivo"]', 'Director, Encargado'),
@@ -222,8 +217,8 @@ INSERT INTO comando (caso_uso, accion, parametro, ejemplo, roles) VALUES
 ('CU3 Pagos', 'VENCUO', 'VENCUO["*"]', 'VENCUO["*"]', 'Director, Encargado'),
 ('CU4 Material', 'INSMAT', 'INSMAT["cotizacion_id","titulo","enlace_del_archivo","imagen | video"]', 'INSMAT["1","Banner Feria","https://drive.google.com/banner","imagen"]', 'Todos (el cliente las suyas)'),
 ('CU4 Material', 'LISMAT', 'LISMAT["* o cotizacion_id"]', 'LISMAT["1"]', 'Todos (el cliente los suyos)'),
-('CU4 Material', 'APRMAT', 'APRMAT["id","observacion o -"]', 'APRMAT["1"]', 'Director, Encargado'),
-('CU4 Material', 'RECMAT', 'RECMAT["id","observacion"]', 'RECMAT["1","El logo está pixelado"]', 'Director, Encargado'),
+('CU4 Material', 'APRMAT', 'APRMAT["id","observacion o -"]', 'APRMAT["1"]', 'Director, Encargado (material del cliente)'),
+('CU4 Material', 'RECMAT', 'RECMAT["id","observacion"]', 'RECMAT["1","El logo está pixelado"]', 'Director, Encargado (material del cliente)'),
 ('CU5 Pauta', 'INSPAU', 'INSPAU["material_id","cuenta_id","post | historia | reel","AAAA-MM-DD HH:MM"]', 'INSPAU["1","2","reel","2026-10-15 18:00"]', 'Director, Encargado'),
 ('CU5 Pauta', 'INSPAU (en vivo)', 'INSPAU["material_id","cuenta_id","en_vivo","AAAA-MM-DD HH:MM inicio","AAAA-MM-DD HH:MM fin"]', 'INSPAU["1","1","en_vivo","2026-10-16 20:00","2026-10-16 21:00"]', 'Director, Encargado'),
 ('CU5 Pauta', 'PUBPAU', 'PUBPAU["id","enlace_de_la_publicacion"]', 'PUBPAU["1","https://www.tiktok.com/@uagrm/video/123"]', 'Director, Encargado'),

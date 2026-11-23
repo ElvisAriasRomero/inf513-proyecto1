@@ -128,7 +128,7 @@ rol ─────────< usuario >────────────�
 | `usuario` | CU1 | id, rol_id, nombres, apellidos, ci_nit, email (único), telefono, username (único), password (SHA-256), fecha_creacion | rol |
 | `cuenta_red_social` | CU2 | id, usuario_id, red_social (Facebook/Instagram/TikTok/YouTube), nombre_cuenta, url (única), token_acceso | usuario (SET NULL) |
 | `servicio` | CU3 | id, nombre, descripcion, precio (3 decimales) | — |
-| `cotizacion` | CU3 | id, cliente_id, usuario_id, fecha, total, tipo_pago (contado/cuotas), nro_cuotas, estado (pendiente/aprobada/pagada/rechazada) | usuario cliente (CASCADE), usuario autor (SET NULL) |
+| `cotizacion` | CU3 | id, cliente_id, usuario_id, fecha, total, tipo_pago (contado/cuotas), nro_cuotas, estado (pendiente al cargarla, aprobada, pagada) | usuario cliente (CASCADE), usuario autor (SET NULL) |
 | `detalle_cotizacion` | CU3 | id, cotizacion_id, servicio_id, cantidad, precio_unitario, subtotal | cotizacion (CASCADE), servicio (CASCADE) |
 | `cuota` | CU3 | id, cotizacion_id, nro_cuota, monto, fecha_vencimiento, fecha_pago, metodo (efectivo/QR), nro_transaccion, comprobante, estado (pendiente/pagada/vencida), verificado_por | cotizacion (CASCADE), usuario (SET NULL) |
 | `material_publicitario` | CU4 | id, cotizacion_id, titulo, archivo (enlace), tipo (imagen/video), estado (pendiente/aprobado/rechazado), validado_por, observacion, fecha_carga | cotizacion (CASCADE), usuario (SET NULL) |

@@ -99,17 +99,12 @@ public class Token {
         comando("ELISER", SERVICIO, ELIMINAR, 1, 1);
         comando("LISSER", SERVICIO, LISTAR, 0, 1);
 
-        comando("INSCOT", COTIZACION, AGREGAR, 2, 3);   // al contado no lleva nro_cuotas
-        comando("MODCOT", COTIZACION, MODIFICAR, 2, 3);
+        comando("INSCOT", COTIZACION, AGREGAR, 4, 23);  // al contado no lleva nro_cuotas; luego de 1 a 10 pares servicio,cantidad
         comando("ELICOT", COTIZACION, ELIMINAR, 1, 1);
         comando("LISCOT", COTIZACION, LISTAR, 0, 1);
         comando("VERCOT", COTIZACION, VER, 1, 1);
-        comando("APRCOT", COTIZACION, APROBAR, 1, 1);
-        comando("RECCOT", COTIZACION, RECHAZAR, 1, 1);
         comando("SOLCOT", COTIZACION, SOLICITAR, 1, 2); // el cliente pide un servicio (siempre al contado)
 
-        comando("INSDET", DETALLE, AGREGAR, 3, 3);
-        comando("ELIDET", DETALLE, ELIMINAR, 1, 1);
         comando("LISDET", DETALLE, LISTAR, 1, 1);
 
         comando("LISCUO", CUOTA, LISTAR, 1, 1);

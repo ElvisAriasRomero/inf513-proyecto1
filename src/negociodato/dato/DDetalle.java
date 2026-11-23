@@ -16,12 +16,6 @@ public class DDetalle extends Dato {
                 cantidad, cantidad, cotizacionId, servicioId);
     }
 
-    /** Devuelve el id de la cotización o null si no se pudo quitar. */
-    public static String eliminar(int id) throws SQLException {
-        return valor("DELETE FROM detalle_cotizacion d USING cotizacion c "
-                + "WHERE d.id = ? AND c.id = d.cotizacion_id AND c.estado = 'pendiente' RETURNING d.cotizacion_id", id);
-    }
-
     public static List<String[]> listar(int cotizacionId) throws SQLException {
         return consultar("SELECT d.id, s.nombre, d.cantidad, d.precio_unitario, d.subtotal "
                 + "FROM detalle_cotizacion d JOIN servicio s ON s.id = d.servicio_id "

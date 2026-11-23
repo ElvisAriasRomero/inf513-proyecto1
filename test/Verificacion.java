@@ -22,9 +22,9 @@ public class Verificacion {
 
     public static void main(String[] args) {
         // --- Intérprete (formato del enunciado: CODIGO["p1","p2"]) ---
-        interpretar("INSCOT[\"3\",\"cuotas\",\"3\"]");
+        interpretar("INSCOT[\"3\",\"cuotas\",\"3\",\"1\",\"2\"]");
         check(metodo.equals("cotizacion") && evento.getAction() == Token.AGREGAR
-                && evento.getParams().equals(List.of("3", "cuotas", "3")), "INSCOT");
+                && evento.getParams().equals(List.of("3", "cuotas", "3", "1", "2")), "INSCOT");
 
         interpretar("LISUSU[\"*\"]");
         check(metodo.equals("usuario") && evento.getAction() == Token.LISTAR && evento.getParams().equals(List.of("*")), "LISUSU *");
@@ -79,7 +79,13 @@ public class Verificacion {
         interpretar("ELIUSU[\"2\",\"3\"]");
         check(metodo.equals("error") && evento.getAction() == Token.ERROR_PARAMS, "sobran parámetros");
         interpretar("INSCOT[\"3\",\"contado\"]");
-        check(metodo.equals("cotizacion"), "INSCOT al contado con 2 parámetros");
+        check(metodo.equals("error") && evento.getAction() == Token.ERROR_PARAMS, "INSCOT sin servicios no se acepta");
+        interpretar("INSCOT[\"3\",\"contado\",\"4\",\"1\"]");
+        check(metodo.equals("cotizacion"), "INSCOT al contado con un servicio");
+        interpretar("INSDET[\"1\",\"3\",\"2\"]");
+        check(metodo.equals("error"), "INSDET ya no existe (el detalle solo se consulta)");
+        interpretar("INSCOT[\"5\",\"cuotas\",\"2\",\"1\",\"2\",\"3\",\"1\"]");
+        check(metodo.equals("cotizacion") && evento.getParams().size() == 7, "INSCOT con servicios en la misma línea");
         interpretar("PAGCUO[\"5\",\"QR\",\"88\"]");
         check(metodo.equals("cuota"), "PAGCUO dentro del rango 2 a 4 (la regla de QR la valida el negocio)");
         interpretar("LISUSU");
@@ -176,6 +182,8 @@ public class Verificacion {
         check(!Permisos.permitido("Cliente", Token.USUARIO, Token.ASIGNAR), "cliente no asigna roles");
 
         check(main.HtmlBuilder.monto("0.020").equals("0.02") && main.HtmlBuilder.monto("150.000").equals("150") && main.HtmlBuilder.monto("Juan").equals("Juan"), "montos sin ceros de más");
+        long[] yt = scraping.Scraper.leerMetricas("\"viewCount\":\"60901445\",\"contextualInfo\":{\"runs\":[{\"text\":\"14 k\"}]}"); // YouTube usa espacio de no separación
+        check(yt != null && yt[0] == 60901445 && yt[2] == 14000, "comentarios de YouTube abreviados (14 k)");
         System.out.println("OK: todas las verificaciones pasaron");
     }
 

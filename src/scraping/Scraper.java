@@ -41,6 +41,7 @@ public class Scraper {
     private static final Pattern RESULTADO = Pattern.compile(
             "class=\"result__a\" href=\"([^\"]+)\"[^>]*>(.*?)</a>(?:.*?class=\"result__snippet\"[^>]*>(.*?)</a>)?",
             Pattern.DOTALL);
+    private static final Pattern COMENTARIOS_YT = Pattern.compile("\"contextualInfo\":\\{\"runs\":\\[\\{\"text\":\"([^\"]+)\"");
     private static final Pattern SEGUIDORES = Pattern.compile(
             "([\\d][\\d.,]*)\\s*(k|m|mil)?\\s*(seguidores|followers|suscriptores|subscribers|me gusta|likes)",
             Pattern.CASE_INSENSITIVE);
@@ -61,6 +62,12 @@ public class Scraper {
     /** {vistas, reacciones, comentarios, compartidos} o null si la página no muestra ninguno. */
     public static long[] leerMetricas(String html) {
         long[] m = {buscar(html, VISTAS), buscar(html, REACCIONES), buscar(html, COMENTARIOS), buscar(html, COMPARTIDOS)};
+        if (m[2] < 0) { // YouTube no trae el número exacto de comentarios, solo el abreviado: "14 k"
+            Matcher c = COMENTARIOS_YT.matcher(html);
+            if (c.find()) {
+                m[2] = seguidores(c.group(1).replace(' ', ' ') + " seguidores"); // ponytail: aproximado (14 k → 14000)
+            }
+        }
         if (m[0] < 0 && m[1] < 0 && m[2] < 0 && m[3] < 0) {
             return null;
         }
