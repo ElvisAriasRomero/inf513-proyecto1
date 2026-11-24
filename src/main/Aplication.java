@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import negociodato.dato.*;
@@ -156,7 +157,14 @@ public class Aplication implements IEmailEventListener, ITokenEventListener {
                     nCuenta.eliminar(p);
                     return ok("Cuenta eliminada, junto con sus pautas y métricas.");
                 case Token.LISTAR:
-                    return HtmlBuilder.tabla("Cuentas de redes sociales", DCuenta.HEADERS, nCuenta.listar());
+                    if (s.rol != null && !s.esCliente()) {
+                        return HtmlBuilder.tabla("Cuentas de redes sociales", DCuenta.HEADERS, nCuenta.listar());
+                    }
+                    List<String[]> publicas = new ArrayList<>(); // clientes y visitantes: sin "registrada por"
+                    for (String[] f : nCuenta.listar()) {
+                        publicas.add(Arrays.copyOf(f, 4));
+                    }
+                    return HtmlBuilder.tabla("Cuentas de redes sociales", Arrays.copyOf(DCuenta.HEADERS, 4), publicas);
                 default:
                     return accionNoValida();
             }

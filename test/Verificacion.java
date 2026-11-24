@@ -174,6 +174,9 @@ public class Verificacion {
         check(metodo.equals("usuario") && evento.getAction() == Token.ASIGNAR, "ASIUSU");
         check(Permisos.permitido(null, Token.USUARIO, Token.REGISTRAR), "visitante se registra");
         check(!Permisos.permitido(null, Token.USUARIO, Token.LISTAR), "visitante no lista usuarios");
+        check(Permisos.permitido(null, Token.SERVICIO, Token.LISTAR) && Permisos.permitido(null, Token.CUENTA, Token.LISTAR), "visitante ve servicios y cuentas");
+        check(!Permisos.permitido(null, Token.CUENTA, Token.AGREGAR) && !Permisos.permitido("Cliente", Token.CUENTA, Token.ELIMINAR)
+                && !Permisos.permitido(null, Token.SERVICIO, Token.MODIFICAR), "visitante y cliente solo listan");
         check(!Permisos.permitido("Encargado", Token.USUARIO, Token.AGREGAR), "encargado no crea usuarios con rol");
         check(!Permisos.permitido("Encargado", Token.USUARIO, Token.MODIFICAR), "encargado no modifica usuarios");
         check(!Permisos.permitido("Encargado", Token.USUARIO, Token.ASIGNAR), "encargado no asigna roles");

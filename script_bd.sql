@@ -1,18 +1,8 @@
--- =====================================================
--- SISTEMA DE PUBLICIDAD UNIVERSITARIA - GRUPO 13
--- PostgreSQL - Base de datos: db_grupo13sc
--- 11 tablas del sistema + tabla comando (lista del help)
--- =====================================================
-
 DROP TABLE IF EXISTS comando, metrica, pagina_detectada, pauta, material_publicitario, cuota,
-    detalle_cotizacion, cotizacion, servicio, cuenta_red_social, usuario, rol;  -- sin CASCADE: nunca toca tablas de otros sistemas
+    detalle_cotizacion, cotizacion, servicio, cuenta_red_social, usuario, rol;
 
--- Necesaria para que la base de datos impida horarios cruzados en pauta.
--- Si el servidor no la permite, borrar esta línea y el bloque EXCLUDE de pauta:
--- el sistema igual valida el choque de horarios antes de guardar.
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
--- ===================== CU1 =====================
 CREATE TABLE rol (
   id     SERIAL PRIMARY KEY,
   nombre VARCHAR(30) NOT NULL UNIQUE
@@ -27,14 +17,13 @@ CREATE TABLE usuario (
   email          VARCHAR(120) NOT NULL UNIQUE,
   telefono       VARCHAR(20),
   username       VARCHAR(40) NOT NULL UNIQUE,
-  password       VARCHAR(255) NOT NULL,          -- SHA-256
+  password       VARCHAR(255) NOT NULL,
   fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ===================== CU2 =====================
 CREATE TABLE cuenta_red_social (
   id            SERIAL PRIMARY KEY,
-  usuario_id    INT REFERENCES usuario(id) ON DELETE SET NULL,   -- quién la registró
+  usuario_id    INT REFERENCES usuario(id) ON DELETE SET NULL,
   red_social    VARCHAR(20) NOT NULL
                 CHECK (red_social IN ('Facebook','Instagram','TikTok','YouTube')),
   nombre_cuenta VARCHAR(100) NOT NULL,
@@ -42,7 +31,6 @@ CREATE TABLE cuenta_red_social (
   token_acceso  TEXT
 );
 
--- ===================== CU3 =====================
 CREATE TABLE servicio (
   id          SERIAL PRIMARY KEY,
   nombre      VARCHAR(80) NOT NULL,
@@ -53,14 +41,14 @@ CREATE TABLE servicio (
 CREATE TABLE cotizacion (
   id         SERIAL PRIMARY KEY,
   cliente_id INT NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
-  usuario_id INT REFERENCES usuario(id) ON DELETE SET NULL,   -- quién la creó
+  usuario_id INT REFERENCES usuario(id) ON DELETE SET NULL,
   fecha      DATE NOT NULL DEFAULT CURRENT_DATE,
   total      NUMERIC(10,3) NOT NULL DEFAULT 0,
   tipo_pago  VARCHAR(10) NOT NULL DEFAULT 'contado'
              CHECK (tipo_pago IN ('contado','cuotas')),
   nro_cuotas INT NOT NULL DEFAULT 1 CHECK (nro_cuotas >= 1),
   estado     VARCHAR(15) NOT NULL DEFAULT 'pendiente'
-             CHECK (estado IN ('pendiente','aprobada','pagada')),   -- pendiente solo mientras se cargan sus servicios
+             CHECK (estado IN ('pendiente','aprobada','pagada')),
   CHECK (tipo_pago = 'cuotas' OR nro_cuotas = 1)
 );
 
@@ -91,12 +79,11 @@ CREATE TABLE cuota (
   CHECK (metodo <> 'QR' OR estado <> 'pagada' OR comprobante IS NOT NULL)
 );
 
--- ===================== CU4 =====================
 CREATE TABLE material_publicitario (
   id            SERIAL PRIMARY KEY,
   cotizacion_id INT NOT NULL REFERENCES cotizacion(id) ON DELETE CASCADE,
   titulo        VARCHAR(120) NOT NULL,
-  archivo       VARCHAR(500) NOT NULL,           -- enlace (Drive, Dropbox, etc.)
+  archivo       VARCHAR(500) NOT NULL,
   tipo          VARCHAR(10) NOT NULL CHECK (tipo IN ('imagen','video')),
   estado        VARCHAR(10) NOT NULL DEFAULT 'pendiente'
                 CHECK (estado IN ('pendiente','aprobado','rechazado')),
@@ -105,7 +92,6 @@ CREATE TABLE material_publicitario (
   fecha_carga   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ===================== CU5 =====================
 CREATE TABLE pauta (
   id                   SERIAL PRIMARY KEY,
   material_id          INT NOT NULL REFERENCES material_publicitario(id) ON DELETE CASCADE,
@@ -113,20 +99,18 @@ CREATE TABLE pauta (
   tipo                 VARCHAR(10) NOT NULL
                        CHECK (tipo IN ('post','historia','reel','en_vivo')),
   fecha_hora_inicio    TIMESTAMPTZ NOT NULL,
-  fecha_hora_fin       TIMESTAMPTZ NOT NULL,     -- post/historia/reel: inicio + 1 minuto
-  url_publicacion      VARCHAR(500),             -- el scraping entra a este enlace
+  fecha_hora_fin       TIMESTAMPTZ NOT NULL,
+  url_publicacion      VARCHAR(500),
   estado               VARCHAR(12) NOT NULL DEFAULT 'programada'
                        CHECK (estado IN ('programada','publicada','cancelada')),
   CHECK (fecha_hora_fin > fecha_hora_inicio),
   CHECK (estado <> 'publicada' OR url_publicacion IS NOT NULL),
-  -- en una misma cuenta no se cruzan los en vivo (post, historia y reel sí pueden coincidir)
   EXCLUDE USING gist (
     cuenta_red_social_id WITH =,
     tstzrange(fecha_hora_inicio, fecha_hora_fin, '[)') WITH &&
   ) WHERE (tipo = 'en_vivo' AND estado <> 'cancelada')
 );
 
--- ===================== CU6 =====================
 CREATE TABLE pagina_detectada (
   id              SERIAL PRIMARY KEY,
   red_social      VARCHAR(20) NOT NULL,
@@ -140,7 +124,6 @@ CREATE TABLE pagina_detectada (
   fecha_deteccion TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ===================== CU7 =====================
 CREATE TABLE metrica (
   id            SERIAL PRIMARY KEY,
   pauta_id      INT NOT NULL REFERENCES pauta(id) ON DELETE CASCADE,
@@ -152,10 +135,6 @@ CREATE TABLE metrica (
 );
 CREATE INDEX metrica_ultima ON metrica (pauta_id, fecha_captura DESC);
 
--- ===================== CU8 =====================
--- Sin tabla propia: los reportes consultan las tablas anteriores.
-
--- ===================== HELP =====================
 CREATE TABLE comando (
   id        SERIAL PRIMARY KEY,
   caso_uso  VARCHAR(60) NOT NULL,
@@ -165,13 +144,8 @@ CREATE TABLE comando (
   roles     VARCHAR(60) NOT NULL
 );
 
--- =====================================================
--- DATOS INICIALES
--- =====================================================
 INSERT INTO rol (nombre) VALUES ('Director'), ('Encargado'), ('Cliente');
 
--- CAMBIAR el email por el correo real del Director: es el que podrá enviar todos los comandos.
--- password = SHA-256 de 'director123'
 INSERT INTO usuario (rol_id, nombres, apellidos, ci_nit, email, telefono, username, password)
 VALUES (1, 'Director', 'General', '0000000', '123evil71@gmail.com', '70000000', 'director',
         '9e4d7bba246abe731743986c4dc50897b68b1d0249a066abb3530fcbaa33dab3');
@@ -198,11 +172,11 @@ INSERT INTO comando (caso_uso, accion, parametro, ejemplo, roles) VALUES
 ('CU2 Cuentas', 'INSCUE', 'INSCUE["Facebook | Instagram | TikTok | YouTube","nombre_cuenta","url","token o -"]', 'INSCUE["Facebook","UAGRM Oficial","https://facebook.com/uagrm","-"]', 'Director, Encargado'),
 ('CU2 Cuentas', 'MODCUE', 'MODCUE["id","Facebook | Instagram | TikTok | YouTube","nombre_cuenta","url","token o -"]', 'MODCUE["1","Facebook","UAGRM","https://facebook.com/uagrm","-"]', 'Director, Encargado'),
 ('CU2 Cuentas', 'ELICUE', 'ELICUE["id"]', 'ELICUE["1"]', 'Director, Encargado'),
-('CU2 Cuentas', 'LISCUE', 'LISCUE["*"]', 'LISCUE["*"]', 'Director, Encargado'),
+('CU2 Cuentas', 'LISCUE', 'LISCUE["*"]', 'LISCUE["*"]', 'Todos (también sin registrarse)'),
 ('CU3 Servicios', 'INSSER', 'INSSER["nombre","descripcion","precio"]', 'INSSER["Reel","Video corto","200"]', 'Director, Encargado'),
 ('CU3 Servicios', 'MODSER', 'MODSER["id","nombre","descripcion","precio"]', 'MODSER["3","Reel","Video de 30 s","250"]', 'Director, Encargado'),
 ('CU3 Servicios', 'ELISER', 'ELISER["id"]', 'ELISER["3"]', 'Director, Encargado'),
-('CU3 Servicios', 'LISSER', 'LISSER["*"]', 'LISSER["*"]', 'Todos los registrados'),
+('CU3 Servicios', 'LISSER', 'LISSER["*"]', 'LISSER["*"]', 'Todos (también sin registrarse)'),
 ('CU3 Cotización', 'INSCOT', 'INSCOT["cliente_id","contado | cuotas","nro_cuotas (solo cuotas)","servicio_id","cantidad", ...más pares]', 'INSCOT["5","cuotas","2","1","2","3","1"]', 'Director, Encargado'),
 ('CU3 Cotización', 'ELICOT', 'ELICOT["id"]', 'ELICOT["1"]', 'Director, Encargado'),
 ('CU3 Cotización', 'LISCOT', 'LISCOT["*"]', 'LISCOT["*"]', 'Todos (el cliente ve las suyas)'),

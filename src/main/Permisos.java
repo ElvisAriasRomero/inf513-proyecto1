@@ -9,12 +9,16 @@ import java.util.Set;
  *  - Encargado: todo lo operativo; de usuarios y roles solo puede listar.
  *  - Cliente (virtual): pedir un servicio (SOLCOT, al contado y ya aprobado), pagarlo con QR, subir su material
  *    y ver sus cotizaciones, cuotas y material. No agrega ni quita servicios: para otro pedido crea otra cotización.
- *  - Visitante (correo no registrado): HELP y registrarse solo (queda como Cliente).
+ *  - Visitante (correo no registrado): HELP, ver servicios y cuentas, y registrarse solo (queda como Cliente).
  */
 public class Permisos {
 
-    private static final Set<String> CLIENTE = Set.of(
+    /** Cualquiera, registrado o no: ver servicios y cuentas (sin "registrada por"). */
+    private static final Set<String> PUBLICO = Set.of(
             clave(Token.SERVICIO, Token.LISTAR),
+            clave(Token.CUENTA, Token.LISTAR));
+
+    private static final Set<String> CLIENTE = Set.of(
             clave(Token.COTIZACION, Token.LISTAR),
             clave(Token.COTIZACION, Token.VER),
             clave(Token.COTIZACION, Token.SOLICITAR),   // pide un servicio: ya aprobada, al contado, solo QR
@@ -26,7 +30,7 @@ public class Permisos {
             clave(Token.MATERIAL, Token.LISTAR));
 
     public static boolean permitido(String rol, int cu, int accion) {
-        if (cu == Token.HELP) {
+        if (cu == Token.HELP || PUBLICO.contains(clave(cu, accion))) {
             return true;
         }
         if (rol == null) {

@@ -5,3 +5,8 @@ respuestas/
 Tokens*.txt
 *.env
 logs/
+
+# Diagramas (no van en el repositorio)
+*.drawio
+*.dtmp
+*.eap

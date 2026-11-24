@@ -5,7 +5,7 @@ import negociodato.dato.DUsuario;
 
 /**
  * Quién envió el correo. Se busca su email en la tabla usuario.
- * Si no está registrado (o está inactivo), rol es null y solo puede usar "help".
+ * Si no está registrado (o está inactivo), rol es null: HELP, ver servicios y cuentas, y registrarse.
  */
 public class Sesion {
 
